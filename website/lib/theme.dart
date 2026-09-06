@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 
+final ValueNotifier<ThemeMode> siteThemeMode = ValueNotifier<ThemeMode>(ThemeMode.dark);
+
+void toggleSiteTheme() {
+  siteThemeMode.value = siteThemeMode.value == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+}
+
 class AppColors {
   static const background = Color(0xFF0A0E1A);
   static const surface = Color(0xFF141A29);
@@ -30,6 +36,16 @@ ThemeData buildAppTheme() {
     colorScheme: const ColorScheme.dark(
       primary: AppColors.accent,
       surface: AppColors.surface,
+    ),
+  );
+}
+
+ThemeData buildAppLightTheme() {
+  return ThemeData.light().copyWith(
+    scaffoldBackgroundColor: const Color(0xFFF1F5F9),
+    colorScheme: const ColorScheme.light(
+      primary: AppColors.accent,
+      surface: Colors.white,
     ),
   );
 }

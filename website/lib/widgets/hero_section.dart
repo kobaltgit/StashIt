@@ -180,28 +180,80 @@ class _HeroSectionState extends State<HeroSection> {
           ),
           const SizedBox(height: 40),
 
-          // Интерактивная подсказка
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0x1538BDF8),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0x4438BDF8)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.touch_app, size: 16, color: Color(0xFF38BDF8)),
-                const SizedBox(width: 8),
-                Text(
-                  Strings.get(
-                    'Попробуйте карман в действии: кликайте по кнопкам, файлам и переключайте тему!',
-                    'Try the interactive pocket below: click buttons, items and toggle theme!',
-                  ),
-                  style: const TextStyle(fontSize: 12, color: Color(0xFFE0F2FE), fontWeight: FontWeight.w500),
+          // Панель быстрого управления интерактивным карманом
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
+                  backgroundColor: isDark ? const Color(0x1AFFFFFF) : Colors.white,
+                  side: BorderSide(color: isDark ? const Color(0x3338BDF8) : const Color(0x330078D6)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
-              ],
-            ),
+                icon: Icon(
+                  isDark ? Icons.light_mode : Icons.dark_mode,
+                  size: 16,
+                  color: isDark ? const Color(0xFFFBBF24) : const Color(0xFF0284C7),
+                ),
+                label: Text(
+                  isDark
+                      ? Strings.get('Тема кармана: Тёмная', 'Pocket: Dark')
+                      : Strings.get('Тема кармана: Светлая', 'Pocket: Light'),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                onPressed: () => setState(() => _isDarkTheme = !_isDarkTheme),
+              ),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
+                  backgroundColor: isDark ? const Color(0x1AFFFFFF) : Colors.white,
+                  side: BorderSide(color: isDark ? const Color(0x33FFFFFF) : const Color(0x33000000)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                icon: const Icon(Icons.add_circle, size: 16, color: Color(0xFF10B981)),
+                label: Text(
+                  Strings.get('+ Добавить файл', '+ Add Item'),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                onPressed: _addItem,
+              ),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
+                  backgroundColor: isDark ? const Color(0x1AFFFFFF) : Colors.white,
+                  side: BorderSide(color: isDark ? const Color(0x33FFFFFF) : const Color(0x33000000)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                icon: const Icon(Icons.select_all, size: 16, color: AppColors.accent),
+                label: Text(
+                  Strings.get('Выбрать всё', 'Select All'),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                onPressed: _toggleSelectAll,
+              ),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
+                  backgroundColor: isDark ? const Color(0x1AFFFFFF) : Colors.white,
+                  side: BorderSide(color: isDark ? const Color(0x33FFFFFF) : const Color(0x33000000)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                icon: const Icon(Icons.delete_outline, size: 16, color: Color(0xFFEF4444)),
+                label: Text(
+                  Strings.get('Очистить', 'Clear'),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                onPressed: _clearItems,
+              ),
+            ],
           ),
           const SizedBox(height: 20),
 

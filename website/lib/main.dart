@@ -19,15 +19,22 @@ class KobaltWebsiteApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<AppLang>(
-      valueListenable: currentLang,
-      builder: (context, lang, _) {
-        return MaterialApp(
-          key: ValueKey('app_$lang'),
-          title: 'StashIt — Kobalt Tools',
-          debugShowCheckedModeBanner: false,
-          theme: buildAppTheme(),
-          home: const LandingPage(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: siteThemeMode,
+      builder: (context, themeMode, _) {
+        return ValueListenableBuilder<AppLang>(
+          valueListenable: currentLang,
+          builder: (context, lang, _) {
+            return MaterialApp(
+              key: ValueKey('app_${lang}_$themeMode'),
+              title: 'StashIt — Kobalt Tools',
+              debugShowCheckedModeBanner: false,
+              theme: buildAppLightTheme(),
+              darkTheme: buildAppTheme(),
+              themeMode: themeMode,
+              home: const LandingPage(),
+            );
+          },
         );
       },
     );

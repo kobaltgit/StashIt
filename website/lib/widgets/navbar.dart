@@ -62,6 +62,21 @@ class NavBar extends StatelessWidget {
             ),
             const SizedBox(width: 8),
           ],
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: siteThemeMode,
+            builder: (context, mode, _) {
+              final isDark = mode == ThemeMode.dark;
+              return IconButton(
+                icon: Icon(
+                  isDark ? Icons.light_mode : Icons.dark_mode,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
+                onPressed: toggleSiteTheme,
+                tooltip: Strings.get('Сменить тему сайта (Светлая/Тёмная)', 'Toggle site theme (Light/Dark)'),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.language, size: 20, color: AppColors.textSecondary),
             onPressed: toggleLanguage,
