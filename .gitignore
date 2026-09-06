@@ -18,3 +18,6 @@ website/.flutter-plugins-dependencies
 *.iml
 .DS_Store
 Thumbs.db
+
+.output/
+
