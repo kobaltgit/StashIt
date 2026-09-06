@@ -66,19 +66,22 @@ class FeaturesGrid extends StatelessWidget {
             style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 32),
-          Wrap(
-            spacing: 20,
-            runSpacing: 20,
-            alignment: WrapAlignment.center,
-            children: features.map((f) {
-              return _FeatureCard(
-                icon: f['icon'] as IconData,
-                titleRu: f['titleRu'] as String,
-                titleEn: f['titleEn'] as String,
-                descRu: f['descRu'] as String,
-                descEn: f['descEn'] as String,
-              );
-            }).toList(),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1040),
+            child: Wrap(
+              spacing: 20,
+              runSpacing: 20,
+              alignment: WrapAlignment.center,
+              children: features.map((f) {
+                return _FeatureCard(
+                  icon: f['icon'] as IconData,
+                  titleRu: f['titleRu'] as String,
+                  titleEn: f['titleEn'] as String,
+                  descRu: f['descRu'] as String,
+                  descEn: f['descEn'] as String,
+                );
+              }).toList(),
+            ),
           ),
         ],
       ),
