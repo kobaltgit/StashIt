@@ -19,33 +19,48 @@ class NavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: BoxDecoration(
-        color: AppColors.background.withValues(alpha: 0.85),
-        border: const Border(bottom: BorderSide(color: AppColors.borderSubtle)),
-      ),
-      child: Row(
-        children: [
-          Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  'assets/logo.png',
-                  width: 30,
-                  height: 30,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Text(
-                'StashIt',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white, letterSpacing: 0.2),
-              ),
-            ],
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: siteThemeMode,
+      builder: (context, mode, _) {
+        final isDark = mode == ThemeMode.dark;
+        final bgColor = isDark
+            ? const Color(0xFF0A0E1A).withValues(alpha: 0.85)
+            : const Color(0xFFFFFFFF).withValues(alpha: 0.85);
+        final borderColor = isDark ? const Color(0x1AFFFFFF) : const Color(0x1E000000);
+        final titleColor = isDark ? Colors.white : const Color(0xFF0F172A);
+
+        return Container(
+          height: 64,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          decoration: BoxDecoration(
+            color: bgColor,
+            border: Border(bottom: BorderSide(color: borderColor)),
           ),
+          child: Row(
+            children: [
+              Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      'assets/logo.png',
+                      width: 30,
+                      height: 30,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'StashIt',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                      color: titleColor,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
           const Spacer(),
           if (MediaQuery.of(context).size.width > 700) ...[
             TextButton(
@@ -94,6 +109,8 @@ class NavBar extends StatelessWidget {
           ),
         ],
       ),
+    );
+      },
     );
   }
 }

@@ -74,49 +74,63 @@ class _LandingPageState extends State<LandingPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          // Ambient Glow
-          Positioned(
-            top: -160,
-            left: 0,
-            right: 0,
-            height: 650,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: AppColors.heroGlowGradient,
-              ),
-            ),
-          ),
-          Column(
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: siteThemeMode,
+      builder: (context, themeMode, _) {
+        final isDark = themeMode == ThemeMode.dark;
+        final bgColor = isDark ? const Color(0xFF0A0E1A) : const Color(0xFFF1F5F9);
+        return Scaffold(
+          backgroundColor: bgColor,
+          body: Stack(
             children: [
-              NavBar(
-                onFeaturesTap: () => _scrollTo(_featuresKey),
-                onComparisonTap: () => _scrollTo(_comparisonKey),
-                onFaqTap: () => _scrollTo(_faqKey),
-                onDownloadTap: () => _scrollTo(_downloadKey),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  child: Column(
-                    children: [
-                      const HeroSection(),
-                      FeaturesGrid(key: _featuresKey),
-                      ComparisonTable(key: _comparisonKey),
-                      FaqSection(key: _faqKey),
-                      DownloadCta(key: _downloadKey),
-                      const Footer(),
-                    ],
+              // Ambient Glow
+              Positioned(
+                top: -160,
+                left: 0,
+                right: 0,
+                height: 650,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: const Alignment(0.0, -0.6),
+                      radius: 0.9,
+                      colors: [
+                        isDark ? const Color(0x330078D6) : const Color(0x180078D6),
+                        isDark ? const Color(0x000A0E1A) : const Color(0x00F1F5F9),
+                      ],
+                    ),
                   ),
                 ),
               ),
+              Column(
+                children: [
+                  NavBar(
+                    onFeaturesTap: () => _scrollTo(_featuresKey),
+                    onComparisonTap: () => _scrollTo(_comparisonKey),
+                    onFaqTap: () => _scrollTo(_faqKey),
+                    onDownloadTap: () => _scrollTo(_downloadKey),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      child: Column(
+                        children: [
+                          const HeroSection(),
+                          FeaturesGrid(key: _featuresKey),
+                          ComparisonTable(key: _comparisonKey),
+                          FaqSection(key: _faqKey),
+                          DownloadCta(key: _downloadKey),
+                          const Footer(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
