@@ -16,7 +16,7 @@ class FeaturesGrid extends StatelessWidget {
         'descEn': 'Hold a file and shake your mouse slightly — the shelf immediately appears at your cursor.',
       },
       {
-        'icon': Icons.science,
+        'icon': Icons.biotech,
         'titleRu': 'Auto on Drag (Эксперимент)',
         'titleEn': 'Auto on Drag (Experimental)',
         'descRu': 'Экспериментальный режим открытия при начале перетаскивания. По умолчанию выключен, так как может ложно срабатывать при обычном выделении текста мышью. Рекомендуем Shake.',

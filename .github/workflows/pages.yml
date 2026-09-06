@@ -41,7 +41,7 @@ jobs:
           cd website
           flutter pub get
 
-          flutter build web --release --base-href "/StashIt/"
+          flutter build web --release --no-tree-shake-icons --base-href "/StashIt/"
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
