@@ -71,34 +71,99 @@ class FeaturesGrid extends StatelessWidget {
             runSpacing: 20,
             alignment: WrapAlignment.center,
             children: features.map((f) {
-              return Container(
-                width: 310,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceCard,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.borderSubtle),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(f['icon'] as IconData, color: AppColors.accent, size: 28),
-                    const SizedBox(height: 14),
-                    Text(
-                      Strings.get(f['titleRu'] as String, f['titleEn'] as String),
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      Strings.get(f['descRu'] as String, f['descEn'] as String),
-                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
-                    ),
-                  ],
-                ),
+              return _FeatureCard(
+                icon: f['icon'] as IconData,
+                titleRu: f['titleRu'] as String,
+                titleEn: f['titleEn'] as String,
+                descRu: f['descRu'] as String,
+                descEn: f['descEn'] as String,
               );
             }).toList(),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FeatureCard extends StatefulWidget {
+  final IconData icon;
+  final String titleRu;
+  final String titleEn;
+  final String descRu;
+  final String descEn;
+
+  const _FeatureCard({
+    required this.icon,
+    required this.titleRu,
+    required this.titleEn,
+    required this.descRu,
+    required this.descEn,
+  });
+
+  @override
+  State<_FeatureCard> createState() => _FeatureCardState();
+}
+
+class _FeatureCardState extends State<_FeatureCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        transform: Matrix4.translationValues(0, _isHovered ? -4 : 0, 0),
+        width: 320,
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          color: _isHovered ? const Color(0x18FFFFFF) : AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: _isHovered ? const Color(0x880078D6) : AppColors.borderSubtle,
+            width: _isHovered ? 1.5 : 1.0,
+          ),
+          boxShadow: _isHovered
+              ? const [
+                  BoxShadow(
+                    color: Color(0x280078D6),
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
+                  )
+                ]
+              : const [],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _isHovered ? AppColors.accent : const Color(0x140078D6),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                widget.icon,
+                color: _isHovered ? Colors.white : AppColors.accent,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              Strings.get(widget.titleRu, widget.titleEn),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              Strings.get(widget.descRu, widget.descEn),
+              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.45),
+            ),
+          ],
+        ),
       ),
     );
   }

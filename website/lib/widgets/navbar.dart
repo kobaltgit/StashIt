@@ -30,21 +30,19 @@ class NavBar extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Center(
-                  child: Text('K', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  'assets/logo.png',
+                  width: 30,
+                  height: 30,
+                  fit: BoxFit.cover,
                 ),
               ),
               const SizedBox(width: 10),
               const Text(
                 'StashIt',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white, letterSpacing: 0.2),
               ),
             ],
           ),
