@@ -1,0 +1,20 @@
+# Node
+node_modules/
+dist/
+.svelte-kit/
+
+# Rust / Tauri
+src-tauri/target/
+
+# Flutter Web
+website/.dart_tool/
+website/build/
+website/.flutter-plugins
+website/.flutter-plugins-dependencies
+
+# IDE
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db

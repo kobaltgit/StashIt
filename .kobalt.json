@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "name": "stashit",
+  "display_name": "StashIt",
+  "description": "Легковесный плавающий карман (Drag-and-Drop Shelf) для Windows 10 & 11 на Rust и Tauri v2.",
+  "version": "1.0.0",
+  "author": "kobaltgit",
+  "license": "MIT",
+  "accent_color": "#38BDF8",
+  "website": {
+    "enabled": true,
+    "type": "flutter_web",
+    "github_pages_url": "https://kobaltgit.github.io/stashit/"
+  },
+  "desktop": {
+    "core": "rust",
+    "runtime": "tauri_v2",
+    "frontend": "svelte_5",
+    "memory_limit_mb": 25,
+    "supports_tray": true,
+    "platforms": ["windows_10", "windows_11"]
+  },
+  "tags": ["windows", "tauri", "svelte5", "tray-app", "kobalt-tools"]
+}
