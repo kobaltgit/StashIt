@@ -1,6 +1,6 @@
-# 🛡️ StashIt
-
 <p align="center">
+  <img src="icon.svg" width="96" height="96" alt="StashIt Logo" />
+  <h1 align="center">StashIt</h1>
   <strong>Легковесный плавающий карман (Drag-and-Drop Shelf в стиле macOS Dropover / Yoink) для Windows 10 & 11 на Rust и Tauri v2.</strong>
 </p>
 
