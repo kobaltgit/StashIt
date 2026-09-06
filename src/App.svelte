@@ -15,6 +15,8 @@
     created_at: number;
   }
 
+  import { translations, type Lang } from "./i18n";
+
   type ThemeMode = "system" | "dark" | "light";
 
   // --- Svelte 5 Runes ($state) ---
@@ -22,6 +24,7 @@
   let isDragOver = $state(false);
   let theme = $state<ThemeMode>((localStorage.getItem("stashit_theme") as ThemeMode) || "system");
   let effectiveTheme = $state<"dark" | "light">("dark");
+  let lang = $state<Lang>((localStorage.getItem("stashit_lang") as Lang) || "ru");
   let showSettings = $state(false);
   let shakeEnabled = $state(true);
   let autoDragEnabled = $state(false);
@@ -46,6 +49,12 @@
     itemsCount > 0 && selectedIds.size === itemsCount
   );
   let selectedCount = $derived(selectedIds.size);
+  let t = $derived(translations[lang]);
+
+  function toggleLang() {
+    lang = lang === "ru" ? "en" : "ru";
+    localStorage.setItem("stashit_lang", lang);
+  }
 
   function formatBytes(bytes: number): string {
     if (bytes === 0) return "0 Б";
@@ -155,7 +164,7 @@
   async function clearAll() {
     try {
       items = await invoke<StashItem[]>("clear_stash");
-      showNotice("Карман очищен");
+      showNotice(t.pocketCleared);
       setTimeout(hideShelf, 400);
     } catch (e) {
       console.error("Ошибка очистки:", e);
@@ -174,7 +183,7 @@
     try {
       const next = !autostartEnabled;
       autostartEnabled = await invoke<boolean>("toggle_autostart", { enable: next });
-      showNotice(autostartEnabled ? "Автозапуск включен" : "Автозапуск выключен");
+      showNotice(autostartEnabled ? t.autostartEnabled : t.autostartDisabled);
     } catch (e) {
       console.error("Ошибка автозапуска:", e);
     }
@@ -199,7 +208,7 @@
     if (filePaths.length > 0) {
       try {
         await invoke("copy_to_clipboard", { paths: filePaths });
-        showNotice(`Скопировано ${filePaths.length} файл(ов)`);
+        showNotice(t.copiedFiles(filePaths.length));
         return;
       } catch (err) {
         console.error("Ошибка нативного копирования файлов:", err);
@@ -214,7 +223,7 @@
 
     if (fallbackText) {
       await navigator.clipboard.writeText(fallbackText);
-      showNotice("Скопировано как текст");
+      showNotice(t.copiedText);
     }
   }
 
@@ -223,7 +232,7 @@
     if (item.path) {
       try {
         await invoke("copy_to_clipboard", { paths: [item.path] });
-        showNotice("Файл скопирован");
+        showNotice(t.fileCopied);
         return;
       } catch (err) {
         console.error("Ошибка копирования файла:", err);
@@ -233,7 +242,7 @@
     const text = item.path || item.text_preview || "";
     if (text) {
       await navigator.clipboard.writeText(text);
-      showNotice("Скопировано в буфер");
+      showNotice(t.textCopied);
     }
   }
 
@@ -501,7 +510,7 @@
       <!-- Переключатель тем -->
       <button 
         class="icon-btn" 
-        title={`Тема: ${theme === 'system' ? 'Системная' : theme === 'dark' ? 'Тёмная' : 'Светлая'}`}
+        title={t.themeTooltip(theme)}
         onclick={cycleTheme}
       >
         {#if theme === "system"}
@@ -513,10 +522,19 @@
         {/if}
       </button>
 
+      <!-- Переключатель языка RU/EN -->
+      <button 
+        class="icon-btn lang-btn" 
+        title={t.langTooltip}
+        onclick={toggleLang}
+      >
+        <span class="lang-text">{lang.toUpperCase()}</span>
+      </button>
+
       <!-- Настройки -->
       <button 
         class="icon-btn" 
-        title="Настройки вызова и автостарта"
+        title={t.settingsTooltip}
         class:active={showSettings}
         onclick={() => (showSettings = !showSettings)}
       >
@@ -524,7 +542,7 @@
       </button>
 
       <!-- Скрыть / Закрыть -->
-      <button class="icon-btn close" title="Свернуть (Esc)" onclick={hideShelf}>
+      <button class="icon-btn close" title={t.closeTooltip} onclick={hideShelf}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
@@ -540,7 +558,7 @@
             bind:checked={shakeEnabled} 
             onchange={updateTriggerSettings}
           />
-          <span>Встряска мыши (Shake)</span>
+          <span>{t.shakeTrigger}</span>
         </label>
       </div>
       <div class="setting-item">
@@ -550,7 +568,7 @@
             bind:checked={autoDragEnabled} 
             onchange={updateTriggerSettings}
           />
-          <span>При начале перетаскивания</span>
+          <span>{t.autoDragTrigger}</span>
         </label>
       </div>
       <div class="setting-item">
@@ -560,7 +578,7 @@
             checked={autostartEnabled} 
             onchange={toggleAutostartSetting}
           />
-          <span>Автозапуск с Windows (HKCU)</span>
+          <span>{t.autostart}</span>
         </label>
       </div>
       <div class="setting-item">
@@ -570,7 +588,7 @@
             checked={autoClearEnabled} 
             onchange={toggleAutoClearSetting}
           />
-          <span>Автоочистка по таймеру (5с)</span>
+          <span>{t.autoClear}</span>
         </label>
       </div>
     </div>
@@ -590,8 +608,8 @@
         <div class="drop-icon">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         </div>
-        <p class="drop-hint">Сбросьте файлы сюда</p>
-        <span class="sub-hint">Встряхните мышь или перетащите файл</span>
+        <p class="drop-hint">{t.dropHint}</p>
+        <span class="sub-hint">{t.subHint}</span>
       </div>
     {:else}
       <div class="items-list">
@@ -610,12 +628,12 @@
                 toggleItemSelection(String(item.id));
               }
             }}
-            title="Клик: выделить/снять. Зажмите и перетащите в папку"
+            title={t.itemTitle}
           >
             <div 
               class="item-checkbox" 
               class:checked={selectedIds.has(String(item.id))}
-              title={selectedIds.has(String(item.id)) ? "Снять выделение" : "Выделить"}
+              title={selectedIds.has(String(item.id)) ? t.deselectAll : t.selectAll}
             >
               {#if selectedIds.has(String(item.id))}
                 ✓
@@ -649,14 +667,14 @@
             <div class="item-actions">
               <button 
                 class="item-action-btn" 
-                title="Копировать файл (в буфер обмена)"
+                title={t.copyFile}
                 onclick={(e) => copySingleItem(item, e)}
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               </button>
               <button 
                 class="item-action-btn remove" 
-                title="Удалить из кармана"
+                title={t.removeItem}
                 onclick={(e) => { e.stopPropagation(); cancelClearCountdown(); removeItem(item.id); }}
               >
                 ✕
@@ -677,16 +695,16 @@
       tabindex="0"
       draggable="true"
       ondragstart={handleDragAll}
-      title="Зажмите и перетащите в целевую папку ВСЕ файлы сразу"
+      title={t.dragHint}
     >
       <div class="drag-icon-grip">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
       </div>
       <span class="master-drag-title">
         {#if selectedCount > 0 && selectedCount < itemsCount}
-          Перетащить выбранные ({selectedCount})
+          {t.dragSelected(selectedCount)}
         {:else}
-          Перетащить всё ({itemsCount})
+          {t.dragAll(itemsCount)}
         {/if}
       </span>
       <span class="master-drag-badge">{formattedTotalSize}</span>
@@ -697,33 +715,33 @@
         <button 
           class="text-link-btn" 
           onclick={toggleSelectAll}
-          title={allSelected ? "Снять выделение со всех" : "Выделить все файлы"}
+          title={allSelected ? t.deselectAll : t.selectAll}
         >
-          {allSelected ? "Снять всё" : "Выбрать все"}
+          {allSelected ? t.deselectAll : t.selectAll}
         </button>
       </div>
 
       <div class="footer-buttons">
-        <button class="action-btn" title="Копировать файлы в буфер обмена Windows" onclick={copyAllItems}>
-          Копировать
+        <button class="action-btn" title={t.copyFile} onclick={copyAllItems}>
+          {t.copyButton}
         </button>
         <button 
           class="action-btn danger" 
           class:countdown-active={clearCountdown !== null}
-          title={clearCountdown !== null ? "Нажмите, чтобы отменить автоочистку или очистить сейчас" : "Очистить весь карман"} 
+          title={clearCountdown !== null ? t.clearCountdownTooltip : t.clearButtonTooltip} 
           onclick={() => {
             if (clearCountdown !== null) {
               cancelClearCountdown();
-              showNotice("Автоочистка отменена");
+              showNotice(t.autoClearCancelled);
             } else {
               clearAll();
             }
           }}
         >
           {#if clearCountdown !== null}
-            Очистить ({clearCountdown}с)
+            {t.clearCountdownButton(clearCountdown)}
           {:else}
-            Очистить
+            {t.clearButton}
           {/if}
         </button>
       </div>
@@ -858,6 +876,16 @@
 
   .icon-btn.close:hover {
     color: #ef4444;
+  }
+
+  .lang-btn {
+    font-family: inherit;
+  }
+
+  .lang-text {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
   }
 
   .settings-panel {

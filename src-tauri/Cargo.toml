@@ -1,6 +1,6 @@
 [package]
 name = "stashit"
-version = "1.0.0"
+version = "1.0.1"
 description = "Легковесный плавающий карман (Drag-and-Drop Shelf) для Windows 10 & 11 на Rust и Tauri v2."
 authors = ["kobaltgit"]
 edition = "2021"

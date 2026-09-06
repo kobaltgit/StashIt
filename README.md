@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version 1.0.0" />
+  <img src="https://img.shields.io/badge/version-1.0.1-blue.svg" alt="Version 1.0.1" />
   <a href="https://kobaltgit.github.io/StashIt/"><img src="https://img.shields.io/badge/Website-Live_Demo-38bdf8.svg?logo=flutter" alt="Live Website" /></a>
   <img src="https://img.shields.io/badge/Rust-Tauri_v2-orange.svg" alt="Tauri v2" />
   <img src="https://img.shields.io/badge/Frontend-Svelte_5-ff3e00.svg" alt="Svelte 5" />
