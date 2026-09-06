@@ -11,8 +11,8 @@ class FaqSection extends StatelessWidget {
       {
         'qRu': 'Как вызвать плавающий карман StashIt?',
         'qEn': 'How do I trigger the StashIt shelf?',
-        'aRu': 'Зажмите левой кнопкой мыши любой файл/папку/текст и слегка встряхните мышь (Shake), либо включите режим появления сразу при начале перетаскивания (Auto on Drag). Также карман можно открыть кликом по иконке в трее.',
-        'aEn': 'Hold any file/folder/text with your left mouse button and shake slightly (Shake), or enable instant appearance when dragging starts (Auto on Drag). You can also click the tray icon.',
+        'aRu': 'Основной и рекомендуемый способ — зажать файл левой кнопкой мыши и слегка встряхнуть (Shake, без ложных срабатываний). Режим появления сразу при перетаскивании (Auto on Drag) является экспериментальным (может срабатывать при обычном выделении текста) и по умолчанию отключен. Также карман открывается по иконке в трее.',
+        'aEn': 'The primary and recommended method is to hold a file and shake slightly (Shake, free of false positives). Auto on Drag is an experimental feature (can accidentally trigger during normal mouse text selection) and is disabled by default. You can also click the tray icon.',
       },
       {
         'qRu': 'Висит ли что-нибудь на экране, когда я не работаю с файлами?',

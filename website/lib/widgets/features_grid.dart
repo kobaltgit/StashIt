@@ -16,11 +16,11 @@ class FeaturesGrid extends StatelessWidget {
         'descEn': 'Hold a file and shake your mouse slightly — the shelf immediately appears at your cursor.',
       },
       {
-        'icon': Icons.drag_indicator,
-        'titleRu': 'Сразу при перетаскивании',
-        'titleEn': 'Auto on Drag',
-        'descRu': 'Режим появления кармана сразу же при начале перетаскивания файлов или текста.',
-        'descEn': 'Instant shelf trigger mode right as you begin dragging files or selected text.',
+        'icon': Icons.science_outlined,
+        'titleRu': 'Auto on Drag (Эксперимент)',
+        'titleEn': 'Auto on Drag (Experimental)',
+        'descRu': 'Экспериментальный режим открытия при начале перетаскивания. По умолчанию выключен, так как может ложно срабатывать при обычном выделении текста мышью. Рекомендуем Shake.',
+        'descEn': 'Experimental instant trigger when dragging starts. Disabled by default because text selection can trigger it falsely. Shake mode is strongly recommended.',
       },
       {
         'icon': Icons.dark_mode,
