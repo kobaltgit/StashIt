@@ -23,12 +23,12 @@ class Footer extends StatelessWidget {
             const Text('© 2026 kobaltgit', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
             const Text('•', style: TextStyle(color: AppColors.textMuted)),
             InkWell(
-              onTap: () => launchUrl(Uri.parse('https://github.com/kobaltgit/stashit/blob/main/LICENSE')),
+              onTap: () => launchUrl(Uri.parse('https://github.com/kobaltgit/StashIt/blob/master/LICENSE')),
               child: const Text('MIT License', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
             ),
             const Text('•', style: TextStyle(color: AppColors.textMuted)),
             InkWell(
-              onTap: () => launchUrl(Uri.parse('https://github.com/kobaltgit/stashit')),
+              onTap: () => launchUrl(Uri.parse('https://github.com/kobaltgit/StashIt')),
               child: const Text('GitHub Repo', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
             ),
             const Text('•', style: TextStyle(color: AppColors.textMuted)),

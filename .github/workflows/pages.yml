@@ -4,9 +4,11 @@ name: 'Deploy Flutter Web to Pages'
 on:
   push:
     branches:
+      - master
       - main
     paths:
       - 'website/**'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
@@ -39,7 +41,7 @@ jobs:
           cd website
           flutter pub get
 
-          flutter build web --release --base-href "/stashit/"
+          flutter build web --release --base-href "/StashIt/"
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

@@ -67,8 +67,9 @@ class HeroSection extends StatelessWidget {
                   Strings.get('Скачать для Windows (.exe)', 'Download for Windows (.exe)'),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                onPressed: () => launchUrl(Uri.parse('https://github.com/kobaltgit/stashit/releases')),
+                onPressed: () => launchUrl(Uri.parse('https://github.com/kobaltgit/StashIt/releases')),
               ),
+              const SizedBox(width: 16),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
@@ -76,9 +77,9 @@ class HeroSection extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                icon: const Icon(Icons.code),
-                label: const Text('GitHub'),
-                onPressed: () => launchUrl(Uri.parse('https://github.com/kobaltgit/stashit')),
+                icon: const Icon(Icons.code, size: 20),
+                label: const Text('GitHub', style: TextStyle(fontSize: 16)),
+                onPressed: () => launchUrl(Uri.parse('https://github.com/kobaltgit/StashIt')),
               ),
             ],
           ),

@@ -76,7 +76,7 @@ class NavBar extends StatelessWidget {
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            onPressed: () => launchUrl(Uri.parse('https://github.com/kobaltgit/stashit/releases')),
+            onPressed: () => launchUrl(Uri.parse('https://github.com/kobaltgit/StashIt/releases')),
             child: Text(Strings.get('Скачать', 'Download')),
           ),
         ],
