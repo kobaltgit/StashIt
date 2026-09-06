@@ -65,15 +65,15 @@ class NavBar extends StatelessWidget {
           if (MediaQuery.of(context).size.width > 700) ...[
             TextButton(
               onPressed: onFeaturesTap,
-              child: Text(Strings.get('Возможности', 'Features'), style: const TextStyle(color: AppColors.textSecondary)),
+              child: Text(Strings.get('Возможности', 'Features'), style: TextStyle(color: AppColors.textSecondary)),
             ),
             TextButton(
               onPressed: onComparisonTap,
-              child: Text(Strings.get('Сравнение', 'Comparison'), style: const TextStyle(color: AppColors.textSecondary)),
+              child: Text(Strings.get('Сравнение', 'Comparison'), style: TextStyle(color: AppColors.textSecondary)),
             ),
             TextButton(
               onPressed: onFaqTap,
-              child: Text(Strings.get('FAQ', 'FAQ'), style: const TextStyle(color: AppColors.textSecondary)),
+              child: Text(Strings.get('FAQ', 'FAQ'), style: TextStyle(color: AppColors.textSecondary)),
             ),
             const SizedBox(width: 8),
           ],
@@ -93,7 +93,7 @@ class NavBar extends StatelessWidget {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.language, size: 20, color: AppColors.textSecondary),
+            icon: Icon(Icons.language, size: 20, color: AppColors.textSecondary),
             onPressed: toggleLanguage,
             tooltip: Strings.get('Сменить язык (RU/EN)', 'Toggle Language (RU/EN)'),
           ),

@@ -42,7 +42,7 @@ class FaqSection extends StatelessWidget {
           children: [
             Text(
               Strings.get('Часто задаваемые вопросы', 'Frequently Asked Questions'),
-              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 24),
             ...faqs.map((faq) {
@@ -52,20 +52,29 @@ class FaqSection extends StatelessWidget {
                   color: AppColors.surfaceCard,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppColors.borderSubtle),
+                  boxShadow: AppColors.isDark
+                      ? const []
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                 ),
                 child: ExpansionTile(
                   iconColor: AppColors.accent,
                   collapsedIconColor: AppColors.textSecondary,
                   title: Text(
                     Strings.get(faq['qRu']!, faq['qEn']!),
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                   ),
                   children: [
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       child: Text(
                         Strings.get(faq['aRu']!, faq['aEn']!),
-                        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
                       ),
                     ),
                   ],

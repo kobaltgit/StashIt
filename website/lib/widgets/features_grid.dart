@@ -58,12 +58,12 @@ class FeaturesGrid extends StatelessWidget {
         children: [
           Text(
             Strings.get('Ключевые возможности', 'Key Features'),
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 12),
           Text(
             Strings.get('Полная функциональность в стиле macOS Dropover на Windows', 'Full macOS Dropover-style experience on Windows'),
-            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 32),
           ConstrainedBox(
@@ -123,21 +123,29 @@ class _FeatureCardState extends State<_FeatureCard> {
         width: 320,
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
-          color: _isHovered ? const Color(0x18FFFFFF) : AppColors.surfaceCard,
+          color: _isHovered ? AppColors.surfaceCardHover : AppColors.surfaceCard,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: _isHovered ? const Color(0x880078D6) : AppColors.borderSubtle,
             width: _isHovered ? 1.5 : 1.0,
           ),
           boxShadow: _isHovered
-              ? const [
+              ? [
                   BoxShadow(
-                    color: Color(0x280078D6),
+                    color: const Color(0x280078D6),
                     blurRadius: 20,
-                    offset: Offset(0, 8),
+                    offset: const Offset(0, 8),
                   )
                 ]
-              : const [],
+              : (AppColors.isDark
+                  ? const []
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )
+                    ]),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,12 +166,12 @@ class _FeatureCardState extends State<_FeatureCard> {
             const SizedBox(height: 16),
             Text(
               Strings.get(widget.titleRu, widget.titleEn),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 8),
             Text(
               Strings.get(widget.descRu, widget.descEn),
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.45),
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.45),
             ),
           ],
         ),

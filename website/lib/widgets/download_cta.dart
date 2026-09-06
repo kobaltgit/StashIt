@@ -15,13 +15,22 @@ class DownloadCta extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderSubtle),
+        boxShadow: AppColors.isDark
+            ? const []
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
       ),
       child: Column(
         children: [
           Text(
             Strings.get('Попробуйте StashIt прямо сейчас', 'Try StashIt Right Now'),
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 12),
           Text(
@@ -30,7 +39,7 @@ class DownloadCta extends StatelessWidget {
               'Free, open-source under MIT license, ready for Windows 10 & 11.',
             ),
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 15, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 28),
           ElevatedButton.icon(

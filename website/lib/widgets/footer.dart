@@ -10,7 +10,7 @@ class Footer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.borderSubtle)),
       ),
       child: Center(
@@ -20,21 +20,21 @@ class Footer extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           alignment: WrapAlignment.center,
           children: [
-            const Text('© 2026 kobaltgit', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
-            const Text('•', style: TextStyle(color: AppColors.textMuted)),
+            Text('© 2026 kobaltgit', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+            Text('•', style: TextStyle(color: AppColors.textMuted)),
             InkWell(
               onTap: () => launchUrl(Uri.parse('https://github.com/kobaltgit/StashIt/blob/master/LICENSE')),
-              child: const Text('MIT License', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+              child: Text('MIT License', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
             ),
-            const Text('•', style: TextStyle(color: AppColors.textMuted)),
+            Text('•', style: TextStyle(color: AppColors.textMuted)),
             InkWell(
               onTap: () => launchUrl(Uri.parse('https://github.com/kobaltgit/StashIt')),
-              child: const Text('GitHub Repo', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+              child: Text('GitHub Repo', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
             ),
-            const Text('•', style: TextStyle(color: AppColors.textMuted)),
+            Text('•', style: TextStyle(color: AppColors.textMuted)),
             Text(
               Strings.get('Сделано для экосистемы Kobalt Tools', 'Crafted for Kobalt Tools Ecosystem'),
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
             ),
           ],
         ),

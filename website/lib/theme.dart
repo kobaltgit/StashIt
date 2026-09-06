@@ -7,35 +7,28 @@ void toggleSiteTheme() {
 }
 
 class AppColors {
-  static const background = Color(0xFF0A0E1A);
-  static const surface = Color(0xFF141A29);
-  static const surfaceCard = Color(0x0AFFFFFF);
-  static const surfaceCardHover = Color(0x14FFFFFF);
-  
+  static bool get isDark => siteThemeMode.value == ThemeMode.dark;
+
   static const accent = Color(0xFF0078D6);
   static const accentHover = Color(0xFF1A88E1);
-  
-  static const textPrimary = Colors.white;
-  static const textSecondary = Color(0xFF94A3B8);
-  static const textMuted = Color(0xFF64748B);
-  static const borderSubtle = Color(0x1AFFFFFF);
 
-  static const heroGlowGradient = RadialGradient(
-    center: Alignment(0.0, -0.6),
-    radius: 0.9,
-    colors: [
-      Color(0x330078D6),
-      Color(0x000A0E1A),
-    ],
-  );
+  static Color get background => isDark ? const Color(0xFF0A0E1A) : const Color(0xFFF1F5F9);
+  static Color get surface => isDark ? const Color(0xFF141A29) : Colors.white;
+  static Color get surfaceCard => isDark ? const Color(0x0AFFFFFF) : Colors.white;
+  static Color get surfaceCardHover => isDark ? const Color(0x14FFFFFF) : const Color(0xFFE2E8F0);
+  
+  static Color get textPrimary => isDark ? Colors.white : const Color(0xFF0F172A);
+  static Color get textSecondary => isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+  static Color get textMuted => isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
+  static Color get borderSubtle => isDark ? const Color(0x1AFFFFFF) : const Color(0x1E000000);
 }
 
 ThemeData buildAppTheme() {
   return ThemeData.dark().copyWith(
-    scaffoldBackgroundColor: AppColors.background,
+    scaffoldBackgroundColor: const Color(0xFF0A0E1A),
     colorScheme: const ColorScheme.dark(
       primary: AppColors.accent,
-      surface: AppColors.surface,
+      surface: Color(0xFF141A29),
     ),
   );
 }

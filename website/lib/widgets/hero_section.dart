@@ -101,7 +101,7 @@ class _HeroSectionState extends State<HeroSection> {
                 const SizedBox(width: 8),
                 Text(
                   Strings.get('Экосистема Kobalt Tools • Windows 10/11', 'Kobalt Tools Ecosystem • Windows 10/11'),
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -117,13 +117,13 @@ class _HeroSectionState extends State<HeroSection> {
                 child: Image.asset('assets/icon.png', width: 56, height: 56),
               ),
               const SizedBox(width: 14),
-              const Text(
+              Text(
                 'StashIt',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 52,
                   fontWeight: FontWeight.w900,
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   letterSpacing: -0.5,
                 ),
               ),
@@ -139,7 +139,7 @@ class _HeroSectionState extends State<HeroSection> {
                 'Smart temporary shelf for Windows 10 & 11 inspired by macOS Dropover. Appears via mouse shake or as soon as you drag. Zero clutter on your desktop when idle.',
               ),
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18, color: AppColors.textSecondary, height: 1.5),
+              style: TextStyle(fontSize: 18, color: AppColors.textSecondary, height: 1.5),
             ),
           ),
           const SizedBox(height: 32),
@@ -167,8 +167,8 @@ class _HeroSectionState extends State<HeroSection> {
               ),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: AppColors.borderSubtle),
+                  foregroundColor: AppColors.textPrimary,
+                  side: BorderSide(color: AppColors.borderSubtle),
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
@@ -189,19 +189,20 @@ class _HeroSectionState extends State<HeroSection> {
             children: [
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
-                  backgroundColor: isDark ? const Color(0x1AFFFFFF) : Colors.white,
-                  side: BorderSide(color: isDark ? const Color(0x3338BDF8) : const Color(0x330078D6)),
+                  foregroundColor: AppColors.textPrimary,
+                  backgroundColor: AppColors.isDark ? const Color(0x1AFFFFFF) : Colors.white,
+                  side: BorderSide(color: AppColors.isDark ? const Color(0x3338BDF8) : const Color(0x330078D6)),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  elevation: AppColors.isDark ? 0 : 1,
                 ),
                 icon: Icon(
-                  isDark ? Icons.light_mode : Icons.dark_mode,
+                  _isDarkTheme ? Icons.dark_mode : Icons.light_mode,
                   size: 16,
-                  color: isDark ? const Color(0xFFFBBF24) : const Color(0xFF0284C7),
+                  color: _isDarkTheme ? const Color(0xFF0284C7) : const Color(0xFFF59E0B),
                 ),
                 label: Text(
-                  isDark
+                  _isDarkTheme
                       ? Strings.get('Тема кармана: Тёмная', 'Pocket: Dark')
                       : Strings.get('Тема кармана: Светлая', 'Pocket: Light'),
                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
@@ -210,11 +211,12 @@ class _HeroSectionState extends State<HeroSection> {
               ),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
-                  backgroundColor: isDark ? const Color(0x1AFFFFFF) : Colors.white,
-                  side: BorderSide(color: isDark ? const Color(0x33FFFFFF) : const Color(0x33000000)),
+                  foregroundColor: AppColors.textPrimary,
+                  backgroundColor: AppColors.isDark ? const Color(0x1AFFFFFF) : Colors.white,
+                  side: BorderSide(color: AppColors.borderSubtle),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  elevation: AppColors.isDark ? 0 : 1,
                 ),
                 icon: const Icon(Icons.add_circle, size: 16, color: Color(0xFF10B981)),
                 label: Text(
@@ -225,11 +227,12 @@ class _HeroSectionState extends State<HeroSection> {
               ),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
-                  backgroundColor: isDark ? const Color(0x1AFFFFFF) : Colors.white,
-                  side: BorderSide(color: isDark ? const Color(0x33FFFFFF) : const Color(0x33000000)),
+                  foregroundColor: AppColors.textPrimary,
+                  backgroundColor: AppColors.isDark ? const Color(0x1AFFFFFF) : Colors.white,
+                  side: BorderSide(color: AppColors.borderSubtle),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  elevation: AppColors.isDark ? 0 : 1,
                 ),
                 icon: const Icon(Icons.select_all, size: 16, color: AppColors.accent),
                 label: Text(
@@ -240,11 +243,12 @@ class _HeroSectionState extends State<HeroSection> {
               ),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
-                  backgroundColor: isDark ? const Color(0x1AFFFFFF) : Colors.white,
-                  side: BorderSide(color: isDark ? const Color(0x33FFFFFF) : const Color(0x33000000)),
+                  foregroundColor: AppColors.textPrimary,
+                  backgroundColor: AppColors.isDark ? const Color(0x1AFFFFFF) : Colors.white,
+                  side: BorderSide(color: AppColors.borderSubtle),
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  elevation: AppColors.isDark ? 0 : 1,
                 ),
                 icon: const Icon(Icons.delete_outline, size: 16, color: Color(0xFFEF4444)),
                 label: Text(
