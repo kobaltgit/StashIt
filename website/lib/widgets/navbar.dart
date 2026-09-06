@@ -23,7 +23,7 @@ class NavBar extends StatelessWidget {
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
-        color: AppColors.background.withOpacity(0.85),
+        color: AppColors.background.withValues(alpha: 0.85),
         border: const Border(bottom: BorderSide(color: AppColors.borderSubtle)),
       ),
       child: Row(

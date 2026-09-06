@@ -9,22 +9,28 @@ class FaqSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final faqs = [
       {
-        'qRu': 'Требуются ли права администратора при установке?',
+        'qRu': 'Как вызвать плавающий карман StashIt?',
+        'qEn': 'How do I trigger the StashIt shelf?',
+        'aRu': 'Зажмите левой кнопкой мыши любой файл/папку/текст и слегка встряхните мышь (Shake), либо включите режим появления сразу при начале перетаскивания (Auto on Drag). Также карман можно открыть кликом по иконке в трее.',
+        'aEn': 'Hold any file/folder/text with your left mouse button and shake slightly (Shake), or enable instant appearance when dragging starts (Auto on Drag). You can also click the tray icon.',
+      },
+      {
+        'qRu': 'Висит ли что-нибудь на экране, когда я не работаю с файлами?',
+        'qEn': 'Does anything stay visible on screen when idle?',
+        'aRu': 'Нет. StashIt на 100% невидим и скрыт в фоне, не занимая ни пикселя полезного пространства экрана.',
+        'aEn': 'No. StashIt is 100% invisible and hidden in the background, consuming zero desktop screen real estate.',
+      },
+      {
+        'qRu': 'Поддерживаются ли светлая и тёмная темы?',
+        'qEn': 'Are Dark and Light themes supported?',
+        'aRu': 'Да, прямо в верхнем тулбаре кармана есть переключатель между Тёмной, Светлой и Автоматической (системной) темой в стиле Windows 11 Fluent Acrylic.',
+        'aEn': 'Yes, right in the shelf toolbar you can switch between Dark, Light, and Automatic (system) themes matching Windows 11 Fluent Acrylic.',
+      },
+      {
+        'qRu': 'Требуются ли права администратора (UAC)?',
         'qEn': 'Does it require Administrator / UAC permissions?',
-        'aRu': 'Нет. Приложение устанавливается в профиль пользователя, а автостарт прописывается в HKCU без навязчивых окон UAC.',
-        'aEn': 'No. The app installs into the user profile, and autostart is written to HKCU without annoying UAC prompts.',
-      },
-      {
-        'qRu': 'Где хранятся данные программы?',
-        'qEn': 'Where is program data stored?',
-        'aRu': 'Все данные и конфигурации сохраняются локально в папке %APPDATA%\\stashit. Никакой передачи в облако.',
-        'aEn': 'All settings and data are stored locally in %APPDATA%\\stashit. Zero transmission to the cloud.',
-      },
-      {
-        'qRu': 'Как вызвать окно утилиты?',
-        'qEn': 'How do I open the app flyout?',
-        'aRu': 'Кликните по иконке в системном трее Windows (около часов) или используйте назначенную горячую клавишу.',
-        'aEn': 'Click on the icon in the Windows system tray (near the clock) or press the configured global hotkey.',
+        'aRu': 'Нет. Приложение работает автономно, а автозагрузка безопасно настраивается через ветку реестра текущего пользователя HKCU без UAC.',
+        'aEn': 'No. The app runs portably/per-user, and autostart is written safely to current user registry HKCU without UAC.',
       },
     ];
 

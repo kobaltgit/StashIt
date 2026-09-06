@@ -21,13 +21,10 @@
         "alwaysOnTop": true,
         "skipTaskbar": true,
         "resizable": false,
-        "visible": false
+        "visible": false,
+        "dragDropEnabled": false
       }
     ],
-    "trayIcon": {
-      "iconPath": "icons/32x32.png",
-      "tooltip": "StashIt — Kobalt Tools"
-    },
     "security": {
       "csp": null
     }
