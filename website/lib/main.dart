@@ -108,6 +108,8 @@ class _LandingPageState extends State<LandingPage> {
                     version: 'v1.0.1',
                     isRussian: currentLang.value == AppLang.ru,
                     onLanguageToggle: toggleLanguage,
+                    isDark: isDark,
+                    onThemeToggle: toggleSiteTheme,
                     accentColor: AppColors.accent,
                     navLinks: [
                       KobaltNavLink(
@@ -124,20 +126,6 @@ class _LandingPageState extends State<LandingPage> {
                       ),
                     ],
                     onDownloadTap: () => _scrollTo(_downloadKey),
-                    extraActions: [
-                      IconButton(
-                        icon: Icon(
-                          isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                          size: 18,
-                          color: AppColors.textSecondary,
-                        ),
-                        onPressed: toggleSiteTheme,
-                        tooltip: Strings.get(
-                          'Сменить тему сайта (Светлая/Тёмная)',
-                          'Toggle site theme (Light/Dark)',
-                        ),
-                      ),
-                    ],
                   ),
                   Expanded(
                     child: SingleChildScrollView(

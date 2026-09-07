@@ -54,7 +54,7 @@ class DownloadCta extends StatelessWidget {
               Strings.get('Перейти к релизам на GitHub', 'Go to GitHub Releases'),
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
-            onPressed: () => launchUrl(Uri.parse('https://github.com/kobaltgit/StashIt/releases')),
+            onPressed: () => launchUrl(Uri.parse('https://github.com/kobaltgit/StashIt/releases/latest')),
           ),
         ],
       ),
