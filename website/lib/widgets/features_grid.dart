@@ -130,11 +130,11 @@ class _FeatureCardState extends State<_FeatureCard> {
             width: _isHovered ? 1.5 : 1.0,
           ),
           boxShadow: _isHovered
-              ? [
+              ? const [
                   BoxShadow(
-                    color: const Color(0x280078D6),
+                    color: Color(0x280078D6),
                     blurRadius: 20,
-                    offset: const Offset(0, 8),
+                    offset: Offset(0, 8),
                   )
                 ]
               : (AppColors.isDark

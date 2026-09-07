@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'i18n.dart';
 import 'theme.dart';
-import 'widgets/navbar.dart';
+import 'package:kobalt_ui/kobalt_ui.dart';
 import 'widgets/hero_section.dart';
 import 'widgets/features_grid.dart';
 import 'widgets/comparison_table.dart';
 import 'widgets/faq_section.dart';
 import 'widgets/download_cta.dart';
-import 'widgets/footer.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -104,11 +103,41 @@ class _LandingPageState extends State<LandingPage> {
               ),
               Column(
                 children: [
-                  NavBar(
-                    onFeaturesTap: () => _scrollTo(_featuresKey),
-                    onComparisonTap: () => _scrollTo(_comparisonKey),
-                    onFaqTap: () => _scrollTo(_faqKey),
+                  KobaltNavBar(
+                    project: KobaltProjectId.stashIt,
+                    version: 'v1.0.1',
+                    isRussian: currentLang.value == AppLang.ru,
+                    onLanguageToggle: toggleLanguage,
+                    accentColor: AppColors.accent,
+                    navLinks: [
+                      KobaltNavLink(
+                        label: Strings.get('Возможности', 'Features'),
+                        onTap: () => _scrollTo(_featuresKey),
+                      ),
+                      KobaltNavLink(
+                        label: Strings.get('Сравнение', 'Comparison'),
+                        onTap: () => _scrollTo(_comparisonKey),
+                      ),
+                      KobaltNavLink(
+                        label: Strings.get('FAQ', 'FAQ'),
+                        onTap: () => _scrollTo(_faqKey),
+                      ),
+                    ],
                     onDownloadTap: () => _scrollTo(_downloadKey),
+                    extraActions: [
+                      IconButton(
+                        icon: Icon(
+                          isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                          size: 18,
+                          color: AppColors.textSecondary,
+                        ),
+                        onPressed: toggleSiteTheme,
+                        tooltip: Strings.get(
+                          'Сменить тему сайта (Светлая/Тёмная)',
+                          'Toggle site theme (Light/Dark)',
+                        ),
+                      ),
+                    ],
                   ),
                   Expanded(
                     child: SingleChildScrollView(
@@ -120,7 +149,19 @@ class _LandingPageState extends State<LandingPage> {
                           ComparisonTable(key: _comparisonKey),
                           FaqSection(key: _faqKey),
                           DownloadCta(key: _downloadKey),
-                          const Footer(),
+                          KobaltFooter(
+                            project: KobaltProjectId.stashIt,
+                            version: 'v1.0.1',
+                            isRussian: currentLang.value == AppLang.ru,
+                            accentColor: AppColors.accent,
+                            onBackToTop: () {
+                              _scrollController.animateTo(
+                                0,
+                                duration: const Duration(milliseconds: 600),
+                                curve: Curves.easeInOutCubic,
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),
