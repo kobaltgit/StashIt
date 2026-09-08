@@ -175,18 +175,31 @@ pub mod win_drop {
                             let text = String::from_utf16_lossy(wide_slice);
                             let _ = GlobalUnlock(text_medium.u.hGlobal);
 
-                            let lines: Vec<&str> = text
+                            let non_empty_lines: Vec<&str> = text
                                 .lines()
                                 .map(|l| l.trim())
                                 .filter(|l| !l.is_empty())
                                 .collect();
 
-                            if !lines.is_empty() {
+                            if !non_empty_lines.is_empty() {
+                                // Если ВСЕ непустые строки — валидные URL, добавляем каждую отдельно.
+                                // Иначе весь текст — одна текстовая заметка.
+                                let all_urls = non_empty_lines
+                                    .iter()
+                                    .all(|l| l.starts_with("http://") || l.starts_with("https://"));
+
                                 let state: State<AppState> = self.app_handle.state();
                                 let mut items = state.items.lock().unwrap();
-                                for line in lines {
-                                    items.push(StashItem::from_text(line));
+
+                                if all_urls {
+                                    for line in &non_empty_lines {
+                                        items.push(StashItem::from_text(line));
+                                    }
+                                } else {
+                                    // Сохраняем весь текст целиком (с переносами строк) как одну карточку
+                                    items.push(StashItem::from_text(&text));
                                 }
+
                                 let cloned = items.clone();
                                 let _ = self.app_handle.emit("stash-updated", cloned);
                                 *pdweffect = DROPEFFECT_COPY;

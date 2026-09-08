@@ -456,12 +456,25 @@
         .map((l) => l.trim())
         .filter(Boolean);
 
-      for (const line of lines) {
+      // Если ВСЕ непустые строки — URL, добавляем каждую как отдельный элемент.
+      // Иначе добавляем весь текст одним вызовом как текстовую заметку.
+      const allUrls = lines.length > 0 && lines.every((l) => l.startsWith("http://") || l.startsWith("https://"));
+
+      if (allUrls) {
+        for (const line of lines) {
+          try {
+            items = await invoke<StashItem[]>("add_stash_text", { text: line });
+            syncSelectionWithItems();
+          } catch (err) {
+            console.error("Ошибка добавления ссылки:", err);
+          }
+        }
+      } else {
         try {
-          items = await invoke<StashItem[]>("add_stash_text", { text: line });
+          items = await invoke<StashItem[]>("add_stash_text", { text: contentToAdd.trim() });
           syncSelectionWithItems();
         } catch (err) {
-          console.error("Ошибка добавления ссылки/текста:", err);
+          console.error("Ошибка добавления текста:", err);
         }
       }
     }
@@ -613,7 +626,7 @@
       </div>
     {:else}
       <div class="items-list">
-        {#each items as item (item.id)}
+        {#each items as item, index (item.id ?? `fallback_${index}`)}
           <div 
             class="item-card" 
             class:selected={selectedIds.has(String(item.id))}
@@ -621,6 +634,7 @@
             tabindex="0"
             draggable="true"
             ondragstart={(e) => handleItemDragStart(e, item)}
+            ondragend={() => { if (!item.path) startClearCountdown(); }}
             onclick={() => toggleItemSelection(String(item.id))}
             onkeydown={(e) => {
               if (e.key === ' ' || e.key === 'Enter') {
@@ -695,6 +709,14 @@
       tabindex="0"
       draggable="true"
       ondragstart={handleDragAll}
+      ondragend={() => {
+        // Для файлов таймер приходит через Rust-событие drag-out-completed.
+        // Если в пачке нет ни одного файла — все текст/URL, запускаем таймер здесь.
+        const targetItems = selectedIds.size > 0
+          ? items.filter((it) => selectedIds.has(String(it.id)))
+          : items;
+        if (!targetItems.some((it) => it.path)) startClearCountdown();
+      }}
       title={t.dragHint}
     >
       <div class="drag-icon-grip">

@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -67,8 +70,10 @@ impl StashItem {
             .unwrap_or_default()
             .as_millis() as u64;
 
+        let count = ID_COUNTER.fetch_add(1, Ordering::Relaxed);
+
         Self {
-            id: format!("{}_{}", now, sanitize_id(&name)),
+            id: format!("{}_{}_{}" , now, count, sanitize_id(&name)),
             kind,
             name,
             path: Some(path_str.to_string()),
@@ -95,11 +100,21 @@ impl StashItem {
             let host = without_proto.split('/').next().unwrap_or("Ссылка");
             host.to_string()
         } else {
-            trimmed.chars().take(24).collect::<String>()
+            // Для многострочного текста берём первую непустую строку (до 30 символов)
+            trimmed
+                .lines()
+                .map(|l| l.trim())
+                .find(|l| !l.is_empty())
+                .unwrap_or(trimmed)
+                .chars()
+                .take(30)
+                .collect::<String>()
         };
 
+        let count = ID_COUNTER.fetch_add(1, Ordering::Relaxed);
+
         Self {
-            id: format!("{}_text", now),
+            id: format!("{}_{}_text", now, count),
             kind: if is_url { ItemKind::Url } else { ItemKind::Text },
             name,
             path: None,
