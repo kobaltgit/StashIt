@@ -253,55 +253,68 @@
     }, 2000);
   }
 
-  // Нативный OLE Drag Out одного файла
+  // Нативный OLE Drag Out одного элемента
   async function handleItemDragStart(e: DragEvent, item: StashItem) {
     cancelClearCountdown();
+    e.preventDefault();
     if (item.path) {
-      e.preventDefault();
+      // Файлы, папки, изображения — нативный OLE drag
       try {
-        await invoke("drag_item", {
-          paths: [item.path],
-        });
+        await invoke("drag_item", { paths: [item.path] });
       } catch (err) {
         console.error("Ошибка native drag-out:", err);
       }
-    } else if (e.dataTransfer) {
-      if (item.text_preview) {
-        e.dataTransfer.setData("text/plain", item.text_preview);
+    } else {
+      // Текст / URL — нативный IDataObject с CF_HDROP + CF_UNICODETEXT:
+      // Проводник видит файл, редакторы/мессенджеры вставляют текст
+      try {
+        await invoke("drag_text_item", {
+          name: item.name,
+          content: item.text_preview ?? "",
+          isUrl: item.kind === "url",
+        });
+      } catch (err) {
+        console.error("Ошибка drag text/url:", err);
       }
-      e.dataTransfer.effectAllowed = "copyMove";
     }
   }
 
-  // Нативный OLE Drag Out всей стопки (всех выделенных файлов или всех файлов кармана)
+  // Нативный OLE Drag Out всей стопки (всех выделенных или всех файлов кармана)
   async function handleDragAll(e: DragEvent) {
     cancelClearCountdown();
+    e.preventDefault();
+
     const targetItems = selectedIds.size > 0
       ? items.filter((it) => selectedIds.has(String(it.id)))
       : items;
 
+    // Пути к реальным файлам
     const filePaths = targetItems
-      .map((it) => it.path)
-      .filter((p): p is string => Boolean(p));
+      .filter((it) => it.path)
+      .map((it) => it.path as string);
 
-    if (filePaths.length > 0) {
-      e.preventDefault();
+    // Текстовые / URL элементы — создаём временные файлы
+    const tempPaths: string[] = [];
+    for (const it of targetItems.filter((it) => !it.path)) {
       try {
-        await invoke("drag_item", {
-          paths: filePaths,
+        const tempPath = await invoke<string>("create_temp_file", {
+          name: it.name,
+          content: it.text_preview ?? "",
+          isUrl: it.kind === "url",
         });
+        tempPaths.push(tempPath);
+      } catch (err) {
+        console.error("Ошибка создания временного файла:", err);
+      }
+    }
+
+    const allPaths = [...filePaths, ...tempPaths];
+    if (allPaths.length > 0) {
+      try {
+        await invoke("drag_item", { paths: allPaths });
       } catch (err) {
         console.error("Ошибка drag all:", err);
       }
-    } else if (e.dataTransfer) {
-      const texts = targetItems
-        .map((it) => it.path || it.text_preview || "")
-        .filter(Boolean)
-        .join("\n");
-      if (texts) {
-        e.dataTransfer.setData("text/plain", texts);
-      }
-      e.dataTransfer.effectAllowed = "copyMove";
     }
   }
 
@@ -634,7 +647,6 @@
             tabindex="0"
             draggable="true"
             ondragstart={(e) => handleItemDragStart(e, item)}
-            ondragend={() => { if (!item.path) startClearCountdown(); }}
             onclick={() => toggleItemSelection(String(item.id))}
             onkeydown={(e) => {
               if (e.key === ' ' || e.key === 'Enter') {
@@ -709,14 +721,6 @@
       tabindex="0"
       draggable="true"
       ondragstart={handleDragAll}
-      ondragend={() => {
-        // Для файлов таймер приходит через Rust-событие drag-out-completed.
-        // Если в пачке нет ни одного файла — все текст/URL, запускаем таймер здесь.
-        const targetItems = selectedIds.size > 0
-          ? items.filter((it) => selectedIds.has(String(it.id)))
-          : items;
-        if (!targetItems.some((it) => it.path)) startClearCountdown();
-      }}
       title={t.dragHint}
     >
       <div class="drag-icon-grip">

@@ -1,6 +1,8 @@
 mod autostart;
 #[cfg(windows)]
 mod drop_target;
+#[cfg(windows)]
+mod text_drag;
 mod hook;
 mod models;
 
@@ -91,6 +93,75 @@ fn set_trigger_mode(shake: bool, auto_drag: bool) {
     hook::win_hook::DRAG_DETECTION_ENABLED.store(auto_drag, Ordering::Relaxed);
 }
 
+/// Sanitize a string for use as a file name (removes illegal Windows chars, max 60 chars).
+pub(crate) fn sanitize_filename(s: &str) -> String {
+    let sanitized: String = s
+        .chars()
+        .map(|c| match c {
+            '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|' | '\n' | '\r' | '\t' => '_',
+            c => c,
+        })
+        .take(60)
+        .collect();
+    let trimmed = sanitized.trim_matches(|c: char| c == '.' || c == ' ');
+    if trimmed.is_empty() {
+        "stashit_note".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+/// Returns (and creates if needed) the StashIt temp directory: %TEMP%\StashIt\
+pub(crate) fn get_stashit_temp_dir() -> Result<std::path::PathBuf, String> {
+    let base = std::env::var("TEMP")
+        .or_else(|_| std::env::var("TMP"))
+        .unwrap_or_else(|_| std::env::temp_dir().to_string_lossy().to_string());
+    let dir = std::path::Path::new(&base).join("StashIt");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir)
+}
+
+/// Removes the entire %TEMP%\StashIt\ directory (called once on startup).
+fn cleanup_temp_dir() {
+    if let Ok(base) = std::env::var("TEMP").or_else(|_| std::env::var("TMP")) {
+        let dir = std::path::Path::new(&base).join("StashIt");
+        if dir.exists() {
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+    }
+}
+
+/// Creates a temporary .txt or .url file in %TEMP%\StashIt\ and returns its full path.
+/// The file is automatically deleted by `drag_item` after the OLE drop completes.
+#[tauri::command]
+fn create_temp_file(name: String, content: String, is_url: bool) -> Result<String, String> {
+    let temp_dir = get_stashit_temp_dir()?;
+
+    let safe_name = sanitize_filename(&name);
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+
+    let filename = if is_url {
+        format!("{}_{}.url", safe_name, now)
+    } else {
+        format!("{}_{}.txt", safe_name, now)
+    };
+
+    let file_path = temp_dir.join(&filename);
+
+    let file_content = if is_url {
+        format!("[InternetShortcut]\nURL={}\n", content.trim())
+    } else {
+        content.clone()
+    };
+
+    std::fs::write(&file_path, file_content.as_bytes()).map_err(|e| e.to_string())?;
+
+    Ok(file_path.to_string_lossy().to_string())
+}
+
 #[tauri::command]
 fn drag_item(window: tauri::WebviewWindow, paths: Vec<String>) -> Result<(), String> {
     use std::path::PathBuf;
@@ -117,11 +188,34 @@ fn drag_item(window: tauri::WebviewWindow, paths: Vec<String>) -> Result<(), Str
         preview_image,
         move |_result, _pos| {
             let _ = window_clone.emit("drag-out-completed", paths_clone.clone());
+            // Удаляем временные файлы StashIt, созданные для текстовых/URL карточек
+            for path_str in &paths_clone {
+                let p = std::path::Path::new(path_str);
+                let is_stashit_temp = p
+                    .parent()
+                    .and_then(|parent| parent.file_name())
+                    .map(|name| name == "StashIt")
+                    .unwrap_or(false);
+                if is_stashit_temp {
+                    let _ = std::fs::remove_file(p);
+                }
+            }
         },
         drag::Options::default(),
     );
 
     Ok(())
+}
+
+#[cfg(windows)]
+#[tauri::command]
+fn drag_text_item(
+    window: tauri::WebviewWindow,
+    name: String,
+    content: String,
+    is_url: bool,
+) {
+    text_drag::start_text_drag(window, name, content, is_url);
 }
 
 #[tauri::command]
@@ -205,6 +299,8 @@ pub fn run() {
             check_autostart,
             set_trigger_mode,
             drag_item,
+            create_temp_file,
+            drag_text_item,
             copy_to_clipboard
         ])
         .setup(|app| {
@@ -270,6 +366,9 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            // Зачистка временных файлов предыдущей сессии
+            cleanup_temp_dir();
 
             // Запуск фонового мониторинга мыши (Shake to Show & Auto on Drag)
             #[cfg(windows)]
