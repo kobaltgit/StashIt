@@ -1,0 +1,217 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <defs>
+    <!-- Градиент глубокого фона -->
+    <radialGradient id="bgGlow" cx="80%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#0f2b26"/>
+      <stop offset="50%" stop-color="#091417"/>
+      <stop offset="100%" stop-color="#05080c"/>
+    </radialGradient>
+
+    <!-- Акцентный градиент для логотипа StashIt (Emerald -> Cyan -> Violet) -->
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="50%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+
+    <!-- Градиент рамки полки -->
+    <linearGradient id="shelfBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.2"/>
+    </linearGradient>
+
+    <!-- Неоновое свечение курсора и элементов -->
+    <filter id="emeraldGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Фон -->
+  <rect width="1280" height="640" fill="url(#bgGlow)"/>
+
+  <!-- Фоновая сетка Fluent UI -->
+  <g stroke="#1e293b" stroke-width="1" opacity="0.3">
+    <line x1="80" y1="80" x2="80" y2="560" stroke-dasharray="4,4"/>
+    <line x1="1200" y1="80" x2="1200" y2="560" stroke-dasharray="4,4"/>
+    <line x1="60" y1="100" x2="1220" y2="100"/>
+    <line x1="60" y1="540" x2="1220" y2="540"/>
+  </g>
+
+  <!-- ==================== ПРАВАЯ ЧАСТЬ: ПЛАВАЮЩАЯ ПОЛКА (DRAG & DROP SHELF) ==================== -->
+  <g transform="translate(690, 95)">
+    <!-- Мягкая подсветка полки -->
+    <rect x="-10" y="-10" width="500" height="420" rx="24" fill="#059669" opacity="0.1" filter="blur(25px)"/>
+
+    <!-- Корпус полки (Acrylic Glassmorphism) -->
+    <rect width="480" height="400" rx="16" fill="#0b131e" fill-opacity="0.9" stroke="url(#shelfBorder)" stroke-width="1.5"/>
+
+    <!-- Шапка полки (Header) -->
+    <g transform="translate(20, 20)">
+      <!-- Зеленая точка активности -->
+      <circle cx="8" cy="8" r="4" fill="#34d399"/>
+      <text x="22" y="12" fill="#e2e8f0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600">
+        Stash Shelf
+      </text>
+
+      <!-- Счетчик файлов -->
+      <rect x="375" y="-3" width="65" height="22" rx="11" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+      <text x="407.5" y="12" text-anchor="middle" fill="#34d399" font-family="sans-serif" font-size="11" font-weight="700">
+        3 ITEMS
+      </text>
+    </g>
+
+    <line x1="0" y1="52" x2="480" y2="52" stroke="#1e293b" stroke-width="1"/>
+
+    <!-- Элементы внутри полки -->
+    <g transform="translate(20, 70)">
+      <!-- Элемент 1: Изображение -->
+      <g transform="translate(0, 0)">
+        <rect width="440" height="66" rx="10" fill="#131d2e" stroke="#334155" stroke-width="1"/>
+        <rect x="12" y="11" width="44" height="44" rx="6" fill="#065f46" fill-opacity="0.5"/>
+        <text x="34" y="38" text-anchor="middle" fill="#34d399" font-size="20">🖼</text>
+        <text x="70" y="30" fill="#f8fafc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600">
+          app_screenshot_final.png
+        </text>
+        <text x="70" y="47" fill="#64748b" font-family="sans-serif" font-size="11">
+          3840×2160 • 2.8 MB
+        </text>
+        <rect x="360" y="21" width="65" height="24" rx="6" fill="#1e293b"/>
+        <text x="392.5" y="37" text-anchor="middle" fill="#94a3b8" font-family="sans-serif" font-size="11">Ready</text>
+      </g>
+
+      <!-- Элемент 2: Архив или код -->
+      <g transform="translate(0, 80)">
+        <rect width="440" height="66" rx="10" fill="#131d2e" stroke="#334155" stroke-width="1"/>
+        <rect x="12" y="11" width="44" height="44" rx="6" fill="#0369a1" fill-opacity="0.5"/>
+        <text x="34" y="38" text-anchor="middle" fill="#38bdf8" font-size="20">📦</text>
+        <text x="70" y="30" fill="#f8fafc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600">
+          release_bundle_v1.0.zip
+        </text>
+        <text x="70" y="47" fill="#64748b" font-family="sans-serif" font-size="11">
+          Compressed Archive • 14.2 MB
+        </text>
+        <rect x="360" y="21" width="65" height="24" rx="6" fill="#1e293b"/>
+        <text x="392.5" y="37" text-anchor="middle" fill="#94a3b8" font-family="sans-serif" font-size="11">Ready</text>
+      </g>
+
+      <!-- Элемент 3: Ссылка / Текст -->
+      <g transform="translate(0, 160)">
+        <rect width="440" height="66" rx="10" fill="#131d2e" stroke="#334155" stroke-width="1"/>
+        <rect x="12" y="11" width="44" height="44" rx="6" fill="#4c1d95" fill-opacity="0.5"/>
+        <text x="34" y="38" text-anchor="middle" fill="#a78bfa" font-size="20">🔗</text>
+        <text x="70" y="30" fill="#f8fafc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600">
+          https://github.com/kobaltgit/StashIt
+        </text>
+        <text x="70" y="47" fill="#64748b" font-family="sans-serif" font-size="11">
+          Web URL Link
+        </text>
+        <rect x="360" y="21" width="65" height="24" rx="6" fill="#1e293b"/>
+        <text x="392.5" y="37" text-anchor="middle" fill="#94a3b8" font-family="sans-serif" font-size="11">Ready</text>
+      </g>
+
+      <!-- Зона сброса (Dropzone Hint) -->
+      <g transform="translate(0, 240)">
+        <rect width="440" height="64" rx="8" fill="#0a121a" stroke="#34d399" stroke-width="1.2" stroke-dasharray="6,6" opacity="0.6"/>
+        <text x="220" y="38" text-anchor="middle" fill="#34d399" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600" letter-spacing="0.5">
+          + DRAG FILES, TEXT OR URLS HERE
+        </text>
+      </g>
+    </g>
+
+    <!-- ==================== ИНДИКАТОР: ЖЕСТ ВСТРЯХИВАНИЯ (SHAKE CURSOR) ==================== -->
+    <g transform="translate(-50, 280)">
+      <!-- Траектория встряхивания мыши -->
+      <path d="M -40 20 Q -25 -10 -10 20 T 10 20 T 30 20" fill="none" stroke="#34d399" stroke-width="2" stroke-dasharray="4,4" opacity="0.8"/>
+      
+      <!-- Курсор мыши -->
+      <g transform="translate(20, -5)">
+        <path d="M 0 0 L 0 20 L 5 15 L 11 26 L 15 24 L 9 13 L 16 13 Z" fill="#34d399" stroke="#064e3b" stroke-width="1.5" filter="url(#emeraldGlow)"/>
+      </g>
+
+      <!-- Подсказка жеста -->
+      <rect x="-105" y="42" width="165" height="26" rx="13" fill="#064e3b" fill-opacity="0.9" stroke="#34d399" stroke-width="1"/>
+      <text x="-22.5" y="59" text-anchor="middle" fill="#f8fafc" font-family="sans-serif" font-size="11" font-weight="700">
+        〰 Shake cursor to stash
+      </text>
+    </g>
+  </g>
+
+  <!-- ==================== ЛЕВАЯ ЧАСТЬ: ИНФОРМАЦИЯ О ПРОЕКТЕ ==================== -->
+  <g transform="translate(100, 150)">
+    <!-- Верхний бейдж категории -->
+    <g>
+      <rect width="280" height="34" rx="17" fill="#064e3b" fill-opacity="0.5" stroke="#34d399" stroke-opacity="0.6"/>
+      <text x="140" y="22" text-anchor="middle" fill="#34d399" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" letter-spacing="1">
+        🛡️ DRAG &amp; DROP SHELF FOR WINDOWS
+      </text>
+    </g>
+
+    <!-- Главный заголовок проекта -->
+    <text x="0" y="100" fill="url(#accentGrad)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="64" font-weight="900" letter-spacing="-1.5">
+      StashIt
+    </text>
+
+    <!-- Описание и слоган -->
+    <text x="0" y="150" fill="#f8fafc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="600">
+      Temporary shelf for files, links &amp; text
+    </text>
+    <text x="0" y="180" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="400">
+      Lightweight Dropover &amp; Yoink alternative for Windows 10/11
+    </text>
+
+    <!-- Метрики производительности (Specs) -->
+    <g transform="translate(0, 225)">
+      <!-- Метрика 1: RAM -->
+      <g transform="translate(0, 0)">
+        <rect width="135" height="36" rx="8" fill="#131d2e" stroke="#34d399" stroke-width="1.2"/>
+        <text x="67.5" y="23" text-anchor="middle" fill="#34d399" font-family="sans-serif" font-size="13" font-weight="700">
+          &lt; 25 MB RAM
+        </text>
+      </g>
+
+      <!-- Метрика 2: Жест вызова -->
+      <g transform="translate(145, 0)">
+        <rect width="145" height="36" rx="8" fill="#131d2e" stroke="#38bdf8" stroke-width="1.2"/>
+        <text x="72.5" y="23" text-anchor="middle" fill="#38bdf8" font-family="sans-serif" font-size="13" font-weight="700">
+          Shake to Stash
+        </text>
+      </g>
+
+      <!-- Метрика 3: Скорость -->
+      <g transform="translate(300, 0)">
+        <rect width="135" height="36" rx="8" fill="#131d2e" stroke="#334155" stroke-width="1.2"/>
+        <text x="67.5" y="23" text-anchor="middle" fill="#f1f5f9" font-family="sans-serif" font-size="13" font-weight="600">
+          Instant Drop
+        </text>
+      </g>
+    </g>
+
+    <!-- Стек технологий (Tech tags) -->
+    <g transform="translate(0, 280)">
+      <!-- Rust -->
+      <g transform="translate(0, 0)">
+        <rect width="85" height="32" rx="8" fill="#0b131e" stroke="#475569"/>
+        <text x="42.5" y="21" text-anchor="middle" fill="#f8fafc" font-family="sans-serif" font-size="13" font-weight="500">Rust</text>
+      </g>
+
+      <!-- Tauri v2 -->
+      <g transform="translate(95, 0)">
+        <rect width="105" height="32" rx="8" fill="#0b131e" stroke="#475569"/>
+        <text x="52.5" y="21" text-anchor="middle" fill="#f8fafc" font-family="sans-serif" font-size="13" font-weight="500">Tauri v2</text>
+      </g>
+
+      <!-- Svelte 5 -->
+      <g transform="translate(210, 0)">
+        <rect width="105" height="32" rx="8" fill="#0b131e" stroke="#475569"/>
+        <text x="52.5" y="21" text-anchor="middle" fill="#f8fafc" font-family="sans-serif" font-size="13" font-weight="500">Svelte 5</text>
+      </g>
+
+      <!-- Win 10/11 -->
+      <g transform="translate(325, 0)">
+        <rect width="115" height="32" rx="8" fill="#0b131e" stroke="#475569"/>
+        <text x="57.5" y="21" text-anchor="middle" fill="#94a3b8" font-family="sans-serif" font-size="13" font-weight="500">Win 10/11</text>
+      </g>
+    </g>
+  </g>
+</svg>

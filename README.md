@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="banner.png" width="100%" alt="StashIt Banner" />
+</p>
+
+<p align="center">
   <img src="icon.svg" width="96" height="96" alt="StashIt Logo" />
   <h1 align="center">StashIt</h1>
   <strong>Легковесный плавающий карман Drag-and-Drop (Dropover / Yoink для Windows) на Rust и Tauri v2.</strong><br/>
@@ -18,6 +22,10 @@
 
 <p align="center">
   <a href="#-о-проекте">🇷🇺 Русский</a> • <a href="#-about-the-project">🇬🇧 English</a> • <a href="#-экосистема-kobalt-tools">🌐 Экосистема</a>
+</p>
+
+<p align="center">
+  <img src="demo.gif" width="800" alt="StashIt Demo in Action" />
 </p>
 
 ---
