@@ -1,6 +1,8 @@
 mod autostart;
 #[cfg(windows)]
 mod drop_target;
+#[cfg(windows)]
+mod text_drag;
 mod hook;
 mod models;
 
@@ -91,6 +93,75 @@ fn set_trigger_mode(shake: bool, auto_drag: bool) {
     hook::win_hook::DRAG_DETECTION_ENABLED.store(auto_drag, Ordering::Relaxed);
 }
 
+/// Sanitize a string for use as a file name (removes illegal Windows chars, max 60 chars).
+pub(crate) fn sanitize_filename(s: &str) -> String {
+    let sanitized: String = s
+        .chars()
+        .map(|c| match c {
+            '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|' | '\n' | '\r' | '\t' => '_',
+            c => c,
+        })
+        .take(60)
+        .collect();
+    let trimmed = sanitized.trim_matches(|c: char| c == '.' || c == ' ');
+    if trimmed.is_empty() {
+        "stashit_note".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+/// Returns (and creates if needed) the StashIt temp directory: %TEMP%\StashIt\
+pub(crate) fn get_stashit_temp_dir() -> Result<std::path::PathBuf, String> {
+    let base = std::env::var("TEMP")
+        .or_else(|_| std::env::var("TMP"))
+        .unwrap_or_else(|_| std::env::temp_dir().to_string_lossy().to_string());
+    let dir = std::path::Path::new(&base).join("StashIt");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir)
+}
+
+/// Removes the entire %TEMP%\StashIt\ directory (called once on startup).
+fn cleanup_temp_dir() {
+    if let Ok(base) = std::env::var("TEMP").or_else(|_| std::env::var("TMP")) {
+        let dir = std::path::Path::new(&base).join("StashIt");
+        if dir.exists() {
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+    }
+}
+
+/// Creates a temporary .txt or .url file in %TEMP%\StashIt\ and returns its full path.
+/// The file is automatically deleted by `drag_item` after the OLE drop completes.
+#[tauri::command]
+fn create_temp_file(name: String, content: String, is_url: bool) -> Result<String, String> {
+    let temp_dir = get_stashit_temp_dir()?;
+
+    let safe_name = sanitize_filename(&name);
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+
+    let filename = if is_url {
+        format!("{}_{}.url", safe_name, now)
+    } else {
+        format!("{}_{}.txt", safe_name, now)
+    };
+
+    let file_path = temp_dir.join(&filename);
+
+    let file_content = if is_url {
+        format!("[InternetShortcut]\nURL={}\n", content.trim())
+    } else {
+        content.clone()
+    };
+
+    std::fs::write(&file_path, file_content.as_bytes()).map_err(|e| e.to_string())?;
+
+    Ok(file_path.to_string_lossy().to_string())
+}
+
 #[tauri::command]
 fn drag_item(window: tauri::WebviewWindow, paths: Vec<String>) -> Result<(), String> {
     use std::path::PathBuf;
@@ -117,6 +188,22 @@ fn drag_item(window: tauri::WebviewWindow, paths: Vec<String>) -> Result<(), Str
         preview_image,
         move |_result, _pos| {
             let _ = window_clone.emit("drag-out-completed", paths_clone.clone());
+            // Удаляем временные файлы StashIt с задержкой 5 сек, чтобы Проводник гарантированно завершил чтение
+            for path_str in &paths_clone {
+                let p = std::path::Path::new(path_str);
+                let is_stashit_temp = p
+                    .parent()
+                    .and_then(|parent| parent.file_name())
+                    .map(|name| name == "StashIt")
+                    .unwrap_or(false);
+                if is_stashit_temp {
+                    let path_buf = p.to_path_buf();
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_secs(5));
+                        let _ = std::fs::remove_file(path_buf);
+                    });
+                }
+            }
         },
         drag::Options::default(),
     );
@@ -124,12 +211,24 @@ fn drag_item(window: tauri::WebviewWindow, paths: Vec<String>) -> Result<(), Str
     Ok(())
 }
 
+#[cfg(windows)]
 #[tauri::command]
-fn copy_to_clipboard(paths: Vec<String>) -> Result<(), String> {
+fn drag_text_item(
+    window: tauri::WebviewWindow,
+    name: String,
+    content: String,
+    is_url: bool,
+) {
+    text_drag::start_text_drag(window, name, content, is_url);
+}
+
+#[tauri::command]
+fn copy_to_clipboard(paths: Vec<String>, text: Option<String>) -> Result<(), String> {
     #[cfg(windows)]
     {
         use std::ffi::OsStr;
         use std::os::windows::ffi::OsStrExt;
+        use windows::Win32::Foundation::{GlobalFree, HGLOBAL};
         use windows_sys::Win32::Foundation::HWND;
         use windows_sys::Win32::System::DataExchange::{
             CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData,
@@ -138,51 +237,105 @@ fn copy_to_clipboard(paths: Vec<String>) -> Result<(), String> {
         use windows_sys::Win32::UI::Shell::DROPFILES;
 
         const CF_HDROP: u32 = 15;
+        const CF_UNICODETEXT: u32 = 13;
 
-        if paths.is_empty() {
+        if paths.is_empty() && text.as_ref().map(|s| s.is_empty()).unwrap_or(true) {
             return Ok(());
         }
 
-        // Подготовка буфера UTF-16 с двойным нулём в конце: path1\0path2\0\0
-        let mut wide_paths: Vec<u16> = Vec::new();
-        for p in paths {
-            let encoded: Vec<u16> = OsStr::new(&p).encode_wide().collect();
-            wide_paths.extend(encoded);
+        // 1. Подготовка CF_HDROP (для вставки файлов в Проводник)
+        let h_drop = if !paths.is_empty() {
+            let mut wide_paths: Vec<u16> = Vec::new();
+            for p in &paths {
+                let encoded: Vec<u16> = OsStr::new(p).encode_wide().collect();
+                wide_paths.extend(encoded);
+                wide_paths.push(0);
+            }
             wide_paths.push(0);
-        }
-        wide_paths.push(0);
 
-        let dropfiles_size = std::mem::size_of::<DROPFILES>();
-        let total_size = dropfiles_size + wide_paths.len() * 2;
+            let dropfiles_size = std::mem::size_of::<DROPFILES>();
+            let total_size = dropfiles_size + wide_paths.len() * 2;
+
+            unsafe {
+                let h_mem = GlobalAlloc(GHND, total_size);
+                if !h_mem.is_null() {
+                    let p_mem = GlobalLock(h_mem) as *mut u8;
+                    if !p_mem.is_null() {
+                        let dropfiles = p_mem as *mut DROPFILES;
+                        (*dropfiles).pFiles = dropfiles_size as u32;
+                        (*dropfiles).fWide = 1; // Unicode
+                        let dest_paths = p_mem.add(dropfiles_size) as *mut u16;
+                        std::ptr::copy_nonoverlapping(wide_paths.as_ptr(), dest_paths, wide_paths.len());
+                        GlobalUnlock(h_mem);
+                        Some(h_mem)
+                    } else {
+                        let _ = GlobalFree(HGLOBAL(h_mem as *mut _));
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
+        // 2. Подготовка CF_UNICODETEXT (для вставки текста в редакторы/мессенджеры)
+        let h_text = if let Some(ref txt) = text {
+            if !txt.is_empty() {
+                let wide_text: Vec<u16> = OsStr::new(txt).encode_wide().chain(Some(0)).collect();
+                let text_size = wide_text.len() * 2;
+                unsafe {
+                    let h_mem = GlobalAlloc(GHND, text_size);
+                    if !h_mem.is_null() {
+                        let p_mem = GlobalLock(h_mem) as *mut u16;
+                        if !p_mem.is_null() {
+                            std::ptr::copy_nonoverlapping(wide_text.as_ptr(), p_mem, wide_text.len());
+                            GlobalUnlock(h_mem);
+                            Some(h_mem)
+                        } else {
+                            let _ = GlobalFree(HGLOBAL(h_mem as *mut _));
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
         unsafe {
-            let h_mem = GlobalAlloc(GHND, total_size);
-            if h_mem.is_null() {
-                return Err("Failed to allocate global memory for clipboard".into());
-            }
-
-            let p_mem = GlobalLock(h_mem) as *mut u8;
-            if p_mem.is_null() {
-                return Err("Failed to lock global memory".into());
-            }
-
-            let dropfiles = p_mem as *mut DROPFILES;
-            (*dropfiles).pFiles = dropfiles_size as u32;
-            (*dropfiles).fWide = 1; // Unicode
-
-            let dest_paths = p_mem.add(dropfiles_size) as *mut u16;
-            std::ptr::copy_nonoverlapping(wide_paths.as_ptr(), dest_paths, wide_paths.len());
-
-            GlobalUnlock(h_mem);
-
             if OpenClipboard(0 as HWND) == 0 {
+                if let Some(h) = h_drop {
+                    let _ = GlobalFree(HGLOBAL(h as *mut _));
+                }
+                if let Some(h) = h_text {
+                    let _ = GlobalFree(HGLOBAL(h as *mut _));
+                }
                 return Err("Failed to open clipboard".into());
             }
+
             EmptyClipboard();
-            if SetClipboardData(CF_HDROP, h_mem as _).is_null() {
-                CloseClipboard();
-                return Err("Failed to set CF_HDROP clipboard data".into());
+
+            // Помещаем оба формата в буфер обмена:
+            // Проводник заберёт CF_HDROP и вставит файл;
+            // Текстовые редакторы заберут CF_UNICODETEXT и вставят строку.
+            if let Some(h) = h_drop {
+                if SetClipboardData(CF_HDROP, h as _).is_null() {
+                    let _ = GlobalFree(HGLOBAL(h as *mut _));
+                }
             }
+
+            if let Some(h) = h_text {
+                if SetClipboardData(CF_UNICODETEXT, h as _).is_null() {
+                    let _ = GlobalFree(HGLOBAL(h as *mut _));
+                }
+            }
+
             CloseClipboard();
         }
     }
@@ -205,6 +358,8 @@ pub fn run() {
             check_autostart,
             set_trigger_mode,
             drag_item,
+            create_temp_file,
+            drag_text_item,
             copy_to_clipboard
         ])
         .setup(|app| {
@@ -270,6 +425,9 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            // Зачистка временных файлов предыдущей сессии
+            cleanup_temp_dir();
 
             // Запуск фонового мониторинга мыши (Shake to Show & Auto on Drag)
             #[cfg(windows)]
