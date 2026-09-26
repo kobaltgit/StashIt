@@ -1,8 +1,27 @@
 # 📝 История версий StashIt (Release Notes)
 
-## [1.0.3] - 2026-09-08
-### Добавлено
-- **Перетаскивание текста и ссылок в папку**: при дропе текстовой карточки в Проводник создаётся файл `.txt` с полным содержимым заметки. При дропе URL-карточки создаётся `.url` ярлык — стандартный формат Windows, который открывается браузером по двойному клику. Поддерживается перетаскивание одиночных карточек, а также смешанных пачек (файлы + текст + ссылки одновременно). Временные файлы создаются в `%TEMP%\StashIt\` и автоматически удаляются после завершения OLE-дропа; при запуске приложения папка зачищается.
+## [1.1.0] - 2026-09-26
+### 🇷🇺 Что нового:
+- **Умный двойной буфер обмена (`CF_UNICODETEXT` + `CF_HDROP`)**: при копировании текстовой заметки или ссылки из StashIt в системный буфер помещаются одновременно текст и файл. При вставке (`Ctrl+V`) в текстовые редакторы (VS Code, Блокнот, Word, браузер, Telegram) вставляется чистый текст, а при вставке в Проводник Windows или на Рабочий стол создаётся готовый файл `.txt` (или `.url`).
+- **Нативный OLE Drag-and-Drop текста в файлы**: перетаскивание текстовых заметок мышью напрямую в окна папок теперь создаёт реальные `.txt` файлы на диске. Реализован `EnumFormatEtc` через API Windows Shell `SHCreateStdEnumFmtEtc` и поддержка разрешений `DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK`.
+- **Безопасная очистка временных файлов**: временные файлы в `%TEMP%\StashIt\` очищаются с задержкой 5 секунд, гарантируя отсутствие конфликтов при копировании Проводником.
+- **Автоматическая CI/CD сборка релизов**: настроен GitHub Actions workflow для автоматической сборки дистрибутивов при выпуске тегов версий:
+  - **Setup.exe** (NSIS инсталлятор)
+  - **MSI** (Windows Installer)
+  - **Portable.exe** (Автономная портативная версия)
+
+---
+
+### 🇬🇧 What's New:
+- **Smart Dual Clipboard (`CF_UNICODETEXT` + `CF_HDROP`)**: copying a text note or link from StashIt puts both plain text and a virtual file into the Windows clipboard simultaneously. Pasting (`Ctrl+V`) into text editors, IDEs, and messengers pastes text, while pasting into Windows Explorer or Desktop creates a `.txt` (or `.url`) file.
+- **Native OLE Drag-and-Drop of Text into Files**: dragging text notes directly into folder windows creates actual `.txt` files on disk. Powered by `EnumFormatEtc` via Windows Shell `SHCreateStdEnumFmtEtc` and `DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK`.
+- **Safe Delayed Temp Cleanup**: files in `%TEMP%\StashIt\` are cleaned up with a 5-second grace period, preventing Explorer copy race conditions.
+- **Automated CI/CD Release Builds**: GitHub Actions workflow automatically builds and publishes 3 distribution flavors for every version tag:
+  - **Setup.exe** (NSIS installer)
+  - **MSI** (Windows Installer package)
+  - **Portable.exe** (Standalone portable executable)
+
+---
 
 ## [1.0.2] - 2026-09-08
 ### Исправлено

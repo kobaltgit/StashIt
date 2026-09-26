@@ -1,13 +1,9 @@
-
 name: 'Release Build'
 
-# Автосборка отключена — релизы собираются локально
-# Чтобы вернуть: раскомментировать push-триггер ниже
-# on:
-#   push:
-#     tags:
-#       - 'v*'
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -35,6 +31,11 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
       - name: Install Frontend Dependencies
         run: npm ci
 
@@ -44,8 +45,39 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-
           releaseName: 'StashIt v__VERSION__'
-          releaseBody: 'См. список изменений в репозитории.'
+          releaseBody: |
+            ## 🚀 StashIt v__VERSION__ — Умный двойной буфер и Drag-out в файлы / Smart Dual Clipboard & Drag-out
+
+            ### 🇷🇺 Что нового:
+            * **Умный двойной буфер обмена (`CF_UNICODETEXT` + `CF_HDROP`)**: при копировании текстовой заметки или ссылки из StashIt в системный буфер помещаются одновременно текст и файл. При вставке (`Ctrl+V`) в текстовые редакторы (VS Code, Блокнот, Word, браузер, Telegram) вставляется чистый текст, а при вставке в Проводник Windows или на Рабочий стол создаётся готовый файл `.txt` (или `.url`).
+            * **Нативный OLE Drag-and-Drop текста в файлы**: перетаскивание текстовых заметок мышью напрямую в окна папок создаёт реальные `.txt` файлы на диске. Реализован `EnumFormatEtc` через API Windows Shell `SHCreateStdEnumFmtEtc` и поддержка разрешений `DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK`.
+            * **Безопасная очистка временных файлов**: временные файлы в `%TEMP%\StashIt\` очищаются с задержкой 5 секунд, гарантируя отсутствие конфликтов при копировании Проводником.
+            * **Автоматическая CI/CD сборка релизов**: автоматическая генерация трёх вариантов дистрибутива:
+              - **`StashIt___VERSION___x64-setup.exe`** — NSIS инсталлятор
+              - **`StashIt___VERSION___x64_en-US.msi`** — MSI инсталлятор
+              - **`StashIt___VERSION___x64_portable.exe`** — автономная портативная версия
+
+            ---
+
+            ### 🇬🇧 What's New:
+            * **Smart Dual Clipboard (`CF_UNICODETEXT` + `CF_HDROP`)**: copying a text note or link from StashIt puts both plain text and a virtual file into the Windows clipboard simultaneously. Pasting (`Ctrl+V`) into text editors, IDEs, and messengers pastes text, while pasting into Windows Explorer or Desktop creates a `.txt` (or `.url`) file.
+            * **Native OLE Drag-and-Drop of Text into Files**: dragging text notes directly into folder windows creates actual `.txt` files on disk. Powered by `EnumFormatEtc` via Windows Shell `SHCreateStdEnumFmtEtc` and `DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK`.
+            * **Safe Delayed Temp Cleanup**: files in `%TEMP%\StashIt\` are cleaned up with a 5-second grace period, preventing Explorer copy race conditions.
+            * **Automated CI/CD Release Builds**: automatic generation of 3 distribution flavors:
+              - **`StashIt___VERSION___x64-setup.exe`** — NSIS installer
+              - **`StashIt___VERSION___x64_en-US.msi`** — MSI installer package
+              - **`StashIt___VERSION___x64_portable.exe`** — standalone portable executable
           releaseDraft: false
           prerelease: false
+
+      - name: Prepare and Upload Portable Executable
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          VERSION="${TAG_NAME#v}"
+          PORTABLE_NAME="StashIt_${VERSION}_x64_portable.exe"
+          cp "src-tauri/target/release/stashit.exe" "${PORTABLE_NAME}"
+          gh release upload "${TAG_NAME}" "${PORTABLE_NAME}" --clobber

@@ -55,7 +55,7 @@
 - 🎯 **Автопоявление при перетаскивании:** Опциональный режим открытия при начале Drag & Drop (как в Yoink).
 - 📦 **Захват всей стопки:** Перетаскивание как отдельных файлов, так и всей пачки сразу через мастер-ручку.
 - ⏳ **Умный таймер автоочистки (5 сек):** Мягкий обратный отсчёт после переноса файлов; карман скрывается автоматически.
-- 📋 **Нативное копирование файлов:** Помещение реальных путей (`CF_HDROP`) в системный буфер Windows для вставки через `Ctrl+V`.
+- 📋 **Умный двойной буфер и Drag-out заметок:** При копировании или переносе заметок StashIt отдает сразу два формата: в текстовые редакторы вставляется текст, а в папки Проводника — готовые файлы `.txt` и `.url`.
 - 🎨 **Адаптивный Fluent Acrylic интерфейс:** Тёмная, светлая и системная темы с акриловым размытием.
 - 🚀 **Безопасная автозагрузка:** Запуск через реестр `HKCU` без запросов UAC.
 
@@ -93,7 +93,7 @@ Consumes **under 25 MB RAM** built with native **Rust 2021** and **Svelte 5** un
 - 🎯 **Auto on Drag:** Optional mode to reveal the shelf immediately upon drag initiation.
 - 📦 **Batch Drag Handle:** Drag all stashed files or selected items simultaneously with one gesture.
 - ⏳ **Smart Auto-Clear Countdown (5s):** Automatically clears and hides the shelf after files are moved out.
-- 📋 **Native Clipboard Integration:** Injects real file system paths (`CF_HDROP`) directly onto the Windows clipboard for `Ctrl+V`.
+- 📋 **Smart Dual Clipboard & Note Drag-out:** When copying or dragging notes, StashIt provides both text and file formats simultaneously: text editors get text, while Windows Explorer folders get real `.txt` and `.url` files!
 - 🎨 **Fluent Acrylic UI:** Beautiful dark and light themes matching Windows 11 aesthetics.
 - 🚀 **Clean User-Mode Startup:** Registry-based autorun in `HKCU` without intrusive UAC popups.
 
@@ -102,7 +102,7 @@ Consumes **under 25 MB RAM** built with native **Rust 2021** and **Svelte 5** un
 Download the latest version from [GitHub Releases](https://github.com/kobaltgit/StashIt/releases/latest):
 
 - **Installer (`Setup.exe` / `.msi`):** Fast user-mode installer, no administrator rights needed.
-- **Portable (`.zip`):** Unpack and run anywhere.
+- **Portable (`.exe`):** Single standalone executable, run anywhere without installation.
 
 ---
 
