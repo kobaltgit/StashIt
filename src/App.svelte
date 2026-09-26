@@ -201,48 +201,85 @@
   }
 
   async function copyAllItems() {
-    const filePaths = items
-      .map((it) => it.path)
-      .filter((p): p is string => Boolean(p));
+    const targetItems = selectedIds.size > 0
+      ? items.filter((it) => selectedIds.has(String(it.id)))
+      : items;
 
-    if (filePaths.length > 0) {
+    if (targetItems.length === 0) return;
+
+    // Пути к реальным файлам
+    const filePaths = targetItems
+      .filter((it) => it.path)
+      .map((it) => it.path as string);
+
+    // Для текстовых карточек и URL создаем временные файлы, чтобы Проводник мог вставить их как файлы
+    const tempPaths: string[] = [];
+    for (const it of targetItems.filter((it) => !it.path)) {
       try {
-        await invoke("copy_to_clipboard", { paths: filePaths });
-        showNotice(t.copiedFiles(filePaths.length));
-        return;
+        const tempPath = await invoke<string>("create_temp_file", {
+          name: it.name,
+          content: it.text_preview ?? "",
+          isUrl: it.kind === "url",
+        });
+        tempPaths.push(tempPath);
       } catch (err) {
-        console.error("Ошибка нативного копирования файлов:", err);
+        console.error("Ошибка создания temp файла для буфера:", err);
       }
     }
 
-    // Запасной вариант для текстовых заметок или ссылок
-    const fallbackText = items
-      .map((it) => it.path || it.text_preview || "")
+    const allPaths = [...filePaths, ...tempPaths];
+    const allText = targetItems
+      .map((it) => it.text_preview || it.path || "")
       .filter(Boolean)
       .join("\n");
 
-    if (fallbackText) {
-      await navigator.clipboard.writeText(fallbackText);
-      showNotice(t.copiedText);
+    try {
+      await invoke("copy_to_clipboard", {
+        paths: allPaths,
+        text: allText || null,
+      });
+      showNotice(t.copiedFiles(allPaths.length));
+    } catch (err) {
+      console.error("Ошибка нативного копирования:", err);
+      if (allText) {
+        await navigator.clipboard.writeText(allText);
+        showNotice(t.copiedText);
+      }
     }
   }
 
   async function copySingleItem(item: StashItem, e: MouseEvent) {
     e.stopPropagation();
-    if (item.path) {
+    let itemPath = item.path;
+    const text = item.text_preview || item.path || "";
+
+    // Если это текст/URL, создаём временный файл для возможности вставки в Проводник
+    if (!itemPath && text) {
       try {
-        await invoke("copy_to_clipboard", { paths: [item.path] });
-        showNotice(t.fileCopied);
-        return;
+        itemPath = await invoke<string>("create_temp_file", {
+          name: item.name,
+          content: item.text_preview ?? "",
+          isUrl: item.kind === "url",
+        });
       } catch (err) {
-        console.error("Ошибка копирования файла:", err);
+        console.error("Ошибка создания temp файла для карточки:", err);
       }
     }
 
-    const text = item.path || item.text_preview || "";
-    if (text) {
-      await navigator.clipboard.writeText(text);
-      showNotice(t.textCopied);
+    const paths = itemPath ? [itemPath] : [];
+
+    try {
+      await invoke("copy_to_clipboard", {
+        paths,
+        text: text || null,
+      });
+      showNotice(item.path ? t.fileCopied : t.textCopied);
+    } catch (err) {
+      console.error("Ошибка копирования карточки:", err);
+      if (text) {
+        await navigator.clipboard.writeText(text);
+        showNotice(t.textCopied);
+      }
     }
   }
 

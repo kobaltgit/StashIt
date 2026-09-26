@@ -18,10 +18,15 @@ use windows::Win32::UI::Shell::DROPFILES;
 const CF_HDROP_U: u16 = 15;
 const CF_UNICODETEXT_U: u16 = 13;
 
-// HRESULT константы для IDropSource
-const S_DRAG_DROP:    HRESULT = HRESULT(0x00040100_u32 as i32);
-const S_DRAG_CANCEL:  HRESULT = HRESULT(0x00040101_u32 as i32);
-const S_DRAG_DEFCUR:  HRESULT = HRESULT(0x00040102_u32 as i32);
+#[link(name = "shell32")]
+extern "system" {
+    fn SHCreateStdEnumFmtEtc(
+        cfmt: u32,
+        afmt: *const FORMATETC,
+        ppenumFormatEtc: *mut Option<IEnumFORMATETC>,
+    ) -> HRESULT;
+}
+
 const E_DV_FORMATETC: HRESULT = HRESULT(0x80040064_u32 as i32);
 const E_NOTIMPL_HR:   HRESULT = HRESULT(0x80004001_u32 as i32);
 
@@ -39,18 +44,18 @@ impl IDropSource_Impl for TextDropSource_Impl {
         grfkeystate: MODIFIERKEYS_FLAGS,
     ) -> HRESULT {
         if fescapepressed.as_bool() {
-            return S_DRAG_CANCEL;
+            return DRAGDROP_S_CANCEL;
         }
-        // MK_LBUTTON=0x0001, MK_RBUTTON=0x0002 — если ни одна не нажата, дроп
-        if grfkeystate.0 & 0x0003 == 0 {
-            S_DRAG_DROP
+        // Если левая кнопка (MK_LBUTTON = 0x0001) отпущена — совершаем дроп
+        if (grfkeystate.0 & 0x0001) == 0 {
+            DRAGDROP_S_DROP
         } else {
             S_OK
         }
     }
 
     fn GiveFeedback(&self, _dweffect: DROPEFFECT) -> HRESULT {
-        S_DRAG_DEFCUR
+        DRAGDROP_S_USEDEFAULTCURSORS
     }
 }
 
@@ -68,6 +73,9 @@ struct TextDataObject {
 impl IDataObject_Impl for TextDataObject_Impl {
     fn GetData(&self, pformatetc: *const FORMATETC) -> Result<STGMEDIUM> {
         unsafe {
+            if pformatetc.is_null() {
+                return Err(Error::from_hresult(E_DV_FORMATETC));
+            }
             let cf = (*pformatetc).cfFormat;
             let src = if cf == CF_HDROP_U {
                 HGLOBAL(self.hdrop as *mut _)
@@ -93,6 +101,9 @@ impl IDataObject_Impl for TextDataObject_Impl {
     }
 
     fn QueryGetData(&self, pformatetc: *const FORMATETC) -> HRESULT {
+        if pformatetc.is_null() {
+            return E_DV_FORMATETC;
+        }
         let cf = unsafe { (*pformatetc).cfFormat };
         if cf == CF_HDROP_U || cf == CF_UNICODETEXT_U {
             S_OK
@@ -113,8 +124,40 @@ impl IDataObject_Impl for TextDataObject_Impl {
         Err(Error::from_hresult(E_NOTIMPL_HR))
     }
 
-    fn EnumFormatEtc(&self, _dwdirection: u32) -> Result<IEnumFORMATETC> {
-        Err(Error::from_hresult(E_NOTIMPL_HR))
+    fn EnumFormatEtc(&self, dwdirection: u32) -> Result<IEnumFORMATETC> {
+        // DATADIR_GET = 1
+        if dwdirection == 1 {
+            let formats = [
+                FORMATETC {
+                    cfFormat: CF_HDROP_U,
+                    ptd: std::ptr::null_mut(),
+                    dwAspect: 1, // DVASPECT_CONTENT
+                    lindex: -1,
+                    tymed: 1, // TYMED_HGLOBAL
+                },
+                FORMATETC {
+                    cfFormat: CF_UNICODETEXT_U,
+                    ptd: std::ptr::null_mut(),
+                    dwAspect: 1,
+                    lindex: -1,
+                    tymed: 1,
+                },
+            ];
+
+            let mut enumerator = None;
+            let hr = unsafe {
+                SHCreateStdEnumFmtEtc(formats.len() as u32, formats.as_ptr(), &mut enumerator)
+            };
+
+            if hr.is_ok() {
+                if let Some(e) = enumerator {
+                    return Ok(e);
+                }
+            }
+            Err(Error::from_hresult(hr))
+        } else {
+            Err(Error::from_hresult(E_NOTIMPL_HR))
+        }
     }
 
     fn DAdvise(
@@ -217,7 +260,15 @@ fn make_temp_file(
     };
     let path = dir.join(&fname);
     let body = if is_url {
-        format!/// Запускает OLE drag с двумя форматами: CF_HDROP + CF_UNICODETEXT.
+        format!("[InternetShortcut]\nURL={}\n", content.trim())
+    } else {
+        content.to_string()
+    };
+    std::fs::write(&path, body.as_bytes()).map_err(|e| e.to_string())?;
+    Ok(path.to_string_lossy().to_string())
+}
+
+/// Запускает OLE drag с двумя форматами: CF_HDROP + CF_UNICODETEXT.
 /// DoDragDrop выполняется на главном UI-потоке (где живут мышиные события
 /// и уже инициализирован OLE). Возвращает немедленно.
 pub fn start_text_drag(
@@ -229,14 +280,16 @@ pub fn start_text_drag(
     // 1. Подготовка данных в вызывающем потоке (быстро, не блокирует UI)
     let temp_path = match make_temp_file(&name, &content, is_url) {
         Ok(p) => p,
-        Err(e) => { eprintln!("[text_drag] temp file: {e}"); return; }
+        Err(e) => {
+            eprintln!("[text_drag] temp file: {e}");
+            return;
+        }
     };
 
     let hdrop_hg = match build_hdrop(&temp_path) {
         Ok(h) => h,
         Err(e) => {
             eprintln!("[text_drag] hdrop: {e:?}");
-            let _ = std::fs::remove_file(&temp_path);
             return;
         }
     };
@@ -245,8 +298,9 @@ pub fn start_text_drag(
         Ok(h) => h,
         Err(e) => {
             eprintln!("[text_drag] utext: {e:?}");
-            unsafe { let _ = GlobalFree(hdrop_hg); }
-            let _ = std::fs::remove_file(&temp_path);
+            unsafe {
+                let _ = GlobalFree(hdrop_hg);
+            }
             return;
         }
     };
@@ -255,11 +309,7 @@ pub fn start_text_drag(
     let hdrop_raw = hdrop_hg.0 as usize;
     let utext_raw = utext_hg.0 as usize;
 
-    // 2. DoDragDrop ДОЛЖЕН выполняться на главном (UI) потоке:
-    //    - там живут мышиные сообщения (без них drag сразу отменяется)
-    //    - OLE уже инициализирован фреймворком (не нужен OleInitialize)
-    //    DoDragDrop блокирует главный поток, но внутренне прокачивает сообщения
-    let _ = window.run_on_main_thread(move || unsafe {
+    let _ = window.clone().run_on_main_thread(move || unsafe {
         let hdrop = HGLOBAL(hdrop_raw as *mut _);
         let utext = HGLOBAL(utext_raw as *mut _);
 
@@ -270,32 +320,24 @@ pub fn start_text_drag(
         .into();
         let drop_src: IDropSource = TextDropSource.into();
 
-        let mut dw_effect = DROPEFFECT_COPY;
-        let _hr = DoDragDrop(&data_obj, &drop_src, DROPEFFECT_COPY, &mut dw_effect);
+        let mut dw_effect = DROPEFFECT_NONE;
+        let _hr = DoDragDrop(
+            &data_obj,
+            &drop_src,
+            DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK,
+            &mut dw_effect,
+        );
 
         let _ = window.emit("drag-out-completed", vec![temp_path.clone()]);
-        let _ = std::fs::remove_file(&temp_path);
+        let temp_path_clone = temp_path.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_secs(5));
+            let _ = std::fs::remove_file(temp_path_clone);
+        });
 
         drop(data_obj);
         drop(drop_src);
         let _ = GlobalFree(hdrop);
         let _ = GlobalFree(utext);
-    });
-}
-
-
-            // 5. Уведомить Svelte + удалить temp файл
-            let _ = window.emit("drag-out-completed", vec![temp_path.clone()]);
-            let _ = std::fs::remove_file(&temp_path);
-
-            // 6. Освобождение: сначала COM-объекты, затем оригинальные HGLOBAL
-            //    (дубликаты, выданные через GetData, принадлежат получателям)
-            drop(data_obj);
-            drop(drop_src);
-            let _ = GlobalFree(hdrop_hg);
-            let _ = GlobalFree(utext_hg);
-
-            OleUninitialize();
-        }
     });
 }
