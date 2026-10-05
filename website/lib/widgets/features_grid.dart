@@ -127,6 +127,9 @@ class _FeatureCardState extends State<_FeatureCard> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = screenWidth < 360 ? screenWidth - 48 : 320.0;
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -134,8 +137,9 @@ class _FeatureCardState extends State<_FeatureCard> {
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
         transform: Matrix4.translationValues(0, _isHovered ? -4 : 0, 0),
-        width: 320,
-        padding: const EdgeInsets.all(22),
+        width: cardWidth,
+        height: 240,
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
         decoration: BoxDecoration(
           color: _isHovered ? AppColors.surfaceCardHover : AppColors.surfaceCard,
           borderRadius: BorderRadius.circular(14),
@@ -177,15 +181,27 @@ class _FeatureCardState extends State<_FeatureCard> {
                 size: 24,
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              Strings.get(widget.titleRu, widget.titleEn),
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 44,
+              child: Text(
+                Strings.get(widget.titleRu, widget.titleEn),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                  height: 1.25,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              Strings.get(widget.descRu, widget.descEn),
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.45),
+            const SizedBox(height: 6),
+            Expanded(
+              child: Text(
+                Strings.get(widget.descRu, widget.descEn),
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.45),
+              ),
             ),
           ],
         ),
