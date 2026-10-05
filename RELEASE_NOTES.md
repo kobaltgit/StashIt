@@ -1,5 +1,42 @@
 # 📝 История версий StashIt (Release Notes)
 
+## [1.2.0] - 2026-10-05
+### 🇷🇺 Что нового:
+- **4 независимых способа вызова кармана (Issue #4)**:
+  1. **Встряхивание мыши (Shake to Show)**: проверенный жест с зажатым ЛКМ при перетаскивании.
+  2. **Глобальный хоткей (Global Shortcut)**: мгновенный toggle кармана по сочетанию клавиш (по умолчанию `Ctrl + Shift + Space`, с возможностью выбора `Alt + S`, `Ctrl + Alt + S`, `Win + Alt + S`, `Ctrl + Shift + X`).
+  3. **Двойное быстрое нажатие модификатора (Double-tap)**: открытие кармана по быстрому двойному нажатию `Ctrl` или `Shift` (алгоритм защищен от случайных нажатий при обычном использовании `Ctrl+C`, `Ctrl+V`).
+  4. **Прилипание к краю экрана (Edge Dock)**: окно автоматически выдвигается навстречу курсору у границы экрана при перетаскивании или удержании курсора; если файлов нет и курсор уходит — аккуратно сворачивается.
+- **Вкладки настроек и Раздел «О программе» (по стандарту Kobalt Tools)**:
+  - Панель настроек разделена на две удобные вкладки: **[Управление]** (триггеры, автостарт, автоочистка, выход) и **[О программе]** (версия, проверка обновлений, ссылки экосистемы).
+  - В контекстное меню системного трея добавлен пункт **«О программе»**, открывающий соответствующую вкладку.
+- **Встроенная система проверки обновлений (GitHub Releases)**:
+  - Легковесный Zero-Dependency чекер версий на базе PowerShell `Invoke-RestMethod` (строгое сохранение потребления памяти <25 МБ RAM).
+  - Сравнение версий SemVer, автоматическое обнаружение ссылок на установщик (`Setup.exe` / `msi`) и портативную версию (`Portable.exe` / `zip`).
+  - Нативные тост-уведомления Windows при выходе новой версии с защитой от спама (cooldown).
+  - Возможность ручной проверки в один клик и опциональная тихая еженедельная автопроверка.
+- **Удаление случайного срабатывания**: упразднен экспериментальный режим открытия кармана по смещению мыши (Auto on Drag), вызывавший ложные срабатывания при выделении текста.
+
+---
+
+### 🇬🇧 What's New:
+- **4 Independent Activation Methods (Issue #4)**:
+  1. **Mouse Shake (Shake to Show)**: reliable gesture with left mouse button held while dragging.
+  2. **Global Hotkey (Global Shortcut)**: instant toggle at mouse cursor via customizable keyboard combinations (default `Ctrl + Shift + Space`, selectable `Alt + S`, `Ctrl + Alt + S`, `Win + Alt + S`, `Ctrl + Shift + X`).
+  3. **Double-Tap Modifier**: summon shelf by double-tapping `Ctrl` or `Shift` within 350ms (cancels on other keys to prevent false triggers during `Ctrl+C` / `Ctrl+V`).
+  4. **Screen Edge Dock**: shelf automatically slides in when cursor moves to the screen edge; auto-collapses on mouse leave if shelf is empty.
+- **Settings Tabs & "About" Section (Kobalt Tools Standard)**:
+  - Settings panel organized into two tabs: **[Controls]** (triggers, autostart, auto-clear, quit) and **[About]** (version badge, release updater, ecosystem links).
+  - Added direct **"About"** entry to the system tray context menu.
+- **Built-in GitHub Release Updater**:
+  - Zero-dependency update checker using background PowerShell `Invoke-RestMethod` (preserving strict <25 MB RAM ceiling).
+  - SemVer comparison, auto-detecting direct download links for installer (`Setup.exe`/`msi`) and portable builds (`Portable.exe`/`zip`).
+  - Native Windows Toast notifications on new releases with intelligent cooldown logic.
+  - One-click manual check button and optional silent weekly auto-check.
+- **Removed False-Trigger Drag Mode**: removed experimental distance-based "Auto on Drag" trigger to eliminate false positives during text selection.
+
+---
+
 ## [1.1.0] - 2026-09-26
 ### 🇷🇺 Что нового:
 - **Умный двойной буфер обмена (`CF_UNICODETEXT` + `CF_HDROP`)**: при копировании текстовой заметки или ссылки из StashIt в системный буфер помещаются одновременно текст и файл. При вставке (`Ctrl+V`) в текстовые редакторы (VS Code, Блокнот, Word, браузер, Telegram) вставляется чистый текст, а при вставке в Проводник Windows или на Рабочий стол создаётся готовый файл `.txt` (или `.url`).

@@ -16,11 +16,11 @@ class FeaturesGrid extends StatelessWidget {
         'descEn': 'Hold a file and shake your mouse slightly — the shelf immediately appears at your cursor.',
       },
       {
-        'icon': Icons.biotech,
-        'titleRu': 'Auto on Drag (Эксперимент)',
-        'titleEn': 'Auto on Drag (Experimental)',
-        'descRu': 'Экспериментальный режим открытия при начале перетаскивания. По умолчанию выключен, так как может ложно срабатывать при обычном выделении текста мышью. Рекомендуем Shake.',
-        'descEn': 'Experimental instant trigger when dragging starts. Disabled by default because text selection can trigger it falsely. Shake mode is strongly recommended.',
+        'icon': Icons.tune,
+        'titleRu': '4 способа активации',
+        'titleEn': '4 Activation Triggers',
+        'descRu': 'Встряхивание (Shake), глобальный хоткей (Ctrl+Shift+Space), двойной клик 2×Ctrl или край экрана (Edge Dock) — включайте любые в настройках.',
+        'descEn': 'Mouse Shake, global hotkey (Ctrl+Shift+Space), 2×Ctrl double-tap, or screen edge dock — customize any trigger in settings.',
       },
       {
         'icon': Icons.dark_mode,
@@ -49,6 +49,13 @@ class FeaturesGrid extends StatelessWidget {
         'titleEn': 'Clean Autostart',
         'descRu': 'Работа через ветку реестра HKCU без раздражающих всплывающих окон UAC администратора.',
         'descEn': 'Startup via HKCU registry without annoying administrator UAC permission prompts.',
+      },
+      {
+        'icon': Icons.system_update_alt,
+        'titleRu': 'Тихие обновления и Раздел «О программе»',
+        'titleEn': 'Silent Updates & About Section',
+        'descRu': 'Автоматическая ненавязчивая проверка новых релизов с GitHub, быстрое скачивание установщика или portable-версии.',
+        'descEn': 'Automatic unobtrusive checks for new releases on GitHub with quick downloads for installer or portable builds.',
       },
     ];
 

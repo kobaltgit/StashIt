@@ -241,6 +241,10 @@ pub mod win_drop {
 
         let all_hwnds = collect_all_hwnds(top_hwnd);
 
+        unsafe {
+            let _ = OleInitialize(None);
+        }
+
         for h in all_hwnds {
             unsafe {
                 let _ = RevokeDragDrop(h);

@@ -47,26 +47,48 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'StashIt v__VERSION__'
           releaseBody: |
-            ## 🚀 StashIt v__VERSION__ — Умный двойной буфер и Drag-out в файлы / Smart Dual Clipboard & Drag-out
+            ## 🚀 StashIt v__VERSION__ — 4 способа вызова, вкладки настроек, раздел «О программе» и автопроверка обновлений / 4 Activation Triggers, Settings Tabs, About Section & GitHub Auto-Updater
 
-            ### 🇷🇺 Что нового:
-            * **Умный двойной буфер обмена (`CF_UNICODETEXT` + `CF_HDROP`)**: при копировании текстовой заметки или ссылки из StashIt в системный буфер помещаются одновременно текст и файл. При вставке (`Ctrl+V`) в текстовые редакторы (VS Code, Блокнот, Word, браузер, Telegram) вставляется чистый текст, а при вставке в Проводник Windows или на Рабочий стол создаётся готовый файл `.txt` (или `.url`).
-            * **Нативный OLE Drag-and-Drop текста в файлы**: перетаскивание текстовых заметок мышью напрямую в окна папок создаёт реальные `.txt` файлы на диске. Реализован `EnumFormatEtc` через API Windows Shell `SHCreateStdEnumFmtEtc` и поддержка разрешений `DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK`.
-            * **Безопасная очистка временных файлов**: временные файлы в `%TEMP%\StashIt\` очищаются с задержкой 5 секунд, гарантируя отсутствие конфликтов при копировании Проводником.
+            ### 🇷🇺 Что нового в версии v__VERSION__:
+            * **4 независимых способа вызова кармана (Issue #4)**:
+              1. **Встряхивание мыши (Shake to Show)**: проверенный эргономичный жест с зажатым ЛКМ при перетаскивании.
+              2. **Глобальный хоткей (Global Shortcut)**: мгновенный toggle кармана по сочетанию клавиш (по умолчанию `Ctrl + Shift + Space`, с возможностью выбора `Alt + S`, `Ctrl + Alt + S`, `Win + Alt + S`, `Ctrl + Shift + X`).
+              3. **Двойное быстрое нажатие модификатора (Double-tap)**: открытие кармана по быстрому двойному нажатию `Ctrl` или `Shift` (алгоритм защищен от случайных нажатий при обычном использовании `Ctrl+C`, `Ctrl+V`).
+              4. **Прилипание к краю экрана (Edge Dock)**: окно автоматически выдвигается навстречу курсору у границы экрана при перетаскивании или удержании курсора; если файлов нет и курсор уходит — аккуратно сворачивается.
+            * **Вкладки настроек и Раздел «О программе» (по стандарту Kobalt Tools)**:
+              - Панель настроек разделена на две удобные вкладки: **[Управление]** (триггеры, автостарт, автоочистка, выход) и **[О программе]** (версия, проверка обновлений, ссылки экосистемы).
+              - В контекстное меню системного трея добавлен пункт **«О программе»**, открывающий соответствующую вкладку.
+            * **Встроенная система проверки обновлений (GitHub Releases)**:
+              - Легковесный Zero-Dependency чекер версий на базе скрытого PowerShell `Invoke-RestMethod` (строгое сохранение потребления памяти <25 МБ RAM).
+              - Сравнение версий по SemVer, автоматическое обнаружение ссылок на установщик (`Setup.exe` / `msi`) и портативную версию (`Portable.exe` / `zip`).
+              - Нативные тост-уведомления Windows при выходе новой версии с защитой от спама (cooldown).
+              - Возможность ручной проверки в один клик и опциональная тихая еженедельная автопроверка.
+            * **Удаление случайного срабатывания**: упразднен экспериментальный режим открытия кармана по смещению мыши (Auto on Drag), вызывавший ложные срабатывания при выделении текста.
             * **Автоматическая CI/CD сборка релизов**: автоматическая генерация трёх вариантов дистрибутива:
-              - **`StashIt___VERSION___x64-setup.exe`** — NSIS инсталлятор
-              - **`StashIt___VERSION___x64_en-US.msi`** — MSI инсталлятор
+              - **`StashIt___VERSION___x64-setup.exe`** — быстрый NSIS инсталлятор (без UAC)
+              - **`StashIt___VERSION___x64_en-US.msi`** — MSI пакет установщика Windows
               - **`StashIt___VERSION___x64_portable.exe`** — автономная портативная версия
 
             ---
 
-            ### 🇬🇧 What's New:
-            * **Smart Dual Clipboard (`CF_UNICODETEXT` + `CF_HDROP`)**: copying a text note or link from StashIt puts both plain text and a virtual file into the Windows clipboard simultaneously. Pasting (`Ctrl+V`) into text editors, IDEs, and messengers pastes text, while pasting into Windows Explorer or Desktop creates a `.txt` (or `.url`) file.
-            * **Native OLE Drag-and-Drop of Text into Files**: dragging text notes directly into folder windows creates actual `.txt` files on disk. Powered by `EnumFormatEtc` via Windows Shell `SHCreateStdEnumFmtEtc` and `DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK`.
-            * **Safe Delayed Temp Cleanup**: files in `%TEMP%\StashIt\` are cleaned up with a 5-second grace period, preventing Explorer copy race conditions.
+            ### 🇬🇧 What's New in v__VERSION__:
+            * **4 Independent Activation Methods (Issue #4)**:
+              1. **Mouse Shake (Shake to Show)**: reliable gesture with left mouse button held while dragging.
+              2. **Global Hotkey (Global Shortcut)**: instant toggle at mouse cursor via customizable keyboard combinations (default `Ctrl + Shift + Space`, selectable `Alt + S`, `Ctrl + Alt + S`, `Win + Alt + S`, `Ctrl + Shift + X`).
+              3. **Double-Tap Modifier**: summon shelf by double-tapping `Ctrl` or `Shift` within 350ms (cancels on other keys to prevent false triggers during `Ctrl+C` / `Ctrl+V`).
+              4. **Screen Edge Dock**: shelf automatically slides in when cursor moves to the screen edge; auto-collapses on mouse leave if shelf is empty.
+            * **Settings Tabs & "About" Section (Kobalt Tools Standard)**:
+              - Settings panel organized into two tabs: **[Controls]** (triggers, autostart, auto-clear, quit) and **[About]** (version badge, release updater, ecosystem links).
+              - Added direct **"About"** entry to the system tray context menu.
+            * **Built-in GitHub Release Updater**:
+              - Zero-dependency update checker using background PowerShell `Invoke-RestMethod` (preserving strict <25 MB RAM ceiling).
+              - SemVer comparison, auto-detecting direct download links for installer (`Setup.exe`/`msi`) and portable builds (`Portable.exe`/`zip`).
+              - Native Windows Toast notifications on new releases with intelligent cooldown logic.
+              - One-click manual check button and optional silent weekly auto-check.
+            * **Removed False-Trigger Drag Mode**: removed experimental distance-based "Auto on Drag" trigger to eliminate false positives during text selection.
             * **Automated CI/CD Release Builds**: automatic generation of 3 distribution flavors:
-              - **`StashIt___VERSION___x64-setup.exe`** — NSIS installer
-              - **`StashIt___VERSION___x64_en-US.msi`** — MSI installer package
+              - **`StashIt___VERSION___x64-setup.exe`** — fast NSIS installer (no UAC required)
+              - **`StashIt___VERSION___x64_en-US.msi`** — Windows Installer package (MSI)
               - **`StashIt___VERSION___x64_portable.exe`** — standalone portable executable
           releaseDraft: false
           prerelease: false
@@ -78,6 +100,10 @@ jobs:
         shell: bash
         run: |
           VERSION="${TAG_NAME#v}"
+          if [ "$TAG_NAME" = "main" ] || [ -z "$TAG_NAME" ]; then
+            VERSION=$(node -p "require('./package.json').version")
+            TAG_NAME="v${VERSION}"
+          fi
           PORTABLE_NAME="StashIt_${VERSION}_x64_portable.exe"
           cp "src-tauri/target/release/stashit.exe" "${PORTABLE_NAME}"
           gh release upload "${TAG_NAME}" "${PORTABLE_NAME}" --clobber

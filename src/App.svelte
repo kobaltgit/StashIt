@@ -19,21 +19,53 @@
 
   type ThemeMode = "system" | "dark" | "light";
 
+  interface AppConfig {
+    shake: boolean;
+    hotkey: boolean;
+    hotkey_combo: number;
+    double_tap: boolean;
+    double_tap_key: number;
+    edge_dock: boolean;
+    theme: ThemeMode;
+    lang: Lang;
+    auto_clear: boolean;
+    auto_check_updates?: boolean;
+  }
+
+  interface UpdateCheckResult {
+    has_update: boolean;
+    current_version: string;
+    latest_version: string;
+    release_url: string;
+    setup_url: string | null;
+    portable_url: string | null;
+    release_notes: string;
+    published_at: string;
+  }
+
   // --- Svelte 5 Runes ($state) ---
   let items = $state<StashItem[]>([]);
   let isDragOver = $state(false);
-  let theme = $state<ThemeMode>((localStorage.getItem("stashit_theme") as ThemeMode) || "system");
+  let theme = $state<ThemeMode>("system");
   let effectiveTheme = $state<"dark" | "light">("dark");
-  let lang = $state<Lang>((localStorage.getItem("stashit_lang") as Lang) || "ru");
+  let lang = $state<Lang>("ru");
   let showSettings = $state(false);
-  let shakeEnabled = $state(true);
-  let autoDragEnabled = $state(false);
+  let activeSettingsTab = $state<"triggers" | "about">("triggers");
+  let shakeEnabled = $state<boolean>(true);
+  let hotkeyEnabled = $state<boolean>(true);
+  let hotkeyCombo = $state<number>(0);
+  let doubleTapEnabled = $state<boolean>(true);
+  let doubleTapKey = $state<number>(0);
+  let edgeDockEnabled = $state<boolean>(false);
   let autostartEnabled = $state(false);
+  let autoCheckUpdates = $state(true);
+  let isCheckingUpdates = $state(false);
+  let updateError = $state<string | null>(null);
+  let updateResult = $state<UpdateCheckResult | null>(null);
   let statusNotice = $state<string | null>(null);
+  let edgeCollapseTimer: number | null = null;
 
-  let autoClearEnabled = $state<boolean>(
-    localStorage.getItem("stashit_autoclear") !== "false"
-  );
+  let autoClearEnabled = $state<boolean>(true);
   let selectedIds = $state<Set<string>>(new Set());
   let clearCountdown = $state<number | null>(null);
   let countdownTimer: number | null = null;
@@ -51,9 +83,71 @@
   let selectedCount = $derived(selectedIds.size);
   let t = $derived(translations[lang]);
 
+  async function loadAppSettings() {
+    try {
+      const cfg = await invoke<AppConfig>("get_app_config");
+      shakeEnabled = cfg.shake;
+      hotkeyEnabled = cfg.hotkey;
+      hotkeyCombo = cfg.hotkey_combo;
+      doubleTapEnabled = cfg.double_tap;
+      doubleTapKey = cfg.double_tap_key;
+      edgeDockEnabled = cfg.edge_dock;
+      theme = (cfg.theme as ThemeMode) || "system";
+      lang = (cfg.lang as Lang) || "ru";
+      autoClearEnabled = cfg.auto_clear;
+      autoCheckUpdates = cfg.auto_check_updates ?? true;
+      updateTheme();
+    } catch (e) {
+      console.error("Ошибка загрузки настроек:", e);
+    }
+  }
+
+  async function saveAllSettings() {
+    try {
+      await invoke("save_app_config", {
+        config: {
+          shake: shakeEnabled,
+          hotkey: hotkeyEnabled,
+          hotkey_combo: Number(hotkeyCombo),
+          double_tap: doubleTapEnabled,
+          double_tap_key: Number(doubleTapKey),
+          edge_dock: edgeDockEnabled,
+          theme,
+          lang,
+          auto_clear: autoClearEnabled,
+          auto_check_updates: autoCheckUpdates,
+        },
+      });
+    } catch (e) {
+      console.error("Ошибка сохранения настроек:", e);
+    }
+  }
+
+  async function handleCheckUpdates(force: boolean = true) {
+    isCheckingUpdates = true;
+    updateError = null;
+    try {
+      const res = await invoke<UpdateCheckResult>("check_for_updates", { force });
+      updateResult = res;
+    } catch (err) {
+      updateError = String(err);
+    } finally {
+      isCheckingUpdates = false;
+    }
+  }
+
+  async function handleOpenUrl(url: string | null | undefined) {
+    if (!url) return;
+    try {
+      await invoke("open_external_url", { url });
+    } catch (err) {
+      console.error("Ошибка открытия ссылки:", err);
+    }
+  }
+
   function toggleLang() {
     lang = lang === "ru" ? "en" : "ru";
-    localStorage.setItem("stashit_lang", lang);
+    saveAllSettings();
   }
 
   function formatBytes(bytes: number): string {
@@ -115,10 +209,15 @@
 
   function toggleAutoClearSetting() {
     autoClearEnabled = !autoClearEnabled;
-    localStorage.setItem("stashit_autoclear", String(autoClearEnabled));
     if (!autoClearEnabled) {
       cancelClearCountdown();
     }
+    saveAllSettings();
+  }
+
+  function toggleAutoCheckSetting() {
+    autoCheckUpdates = !autoCheckUpdates;
+    saveAllSettings();
   }
 
   // --- Управление темами ---
@@ -130,7 +229,6 @@
       effectiveTheme = theme;
     }
     document.documentElement.setAttribute("data-theme", effectiveTheme);
-    localStorage.setItem("stashit_theme", theme);
   }
 
   function cycleTheme() {
@@ -138,6 +236,7 @@
     else if (theme === "dark") theme = "light";
     else theme = "system";
     updateTheme();
+    saveAllSettings();
   }
 
   // --- Tauri IPC операции ---
@@ -179,6 +278,14 @@
     }
   }
 
+  async function exitApp() {
+    try {
+      await invoke("exit_app");
+    } catch (e) {
+      console.error("Ошибка закрытия StashIt:", e);
+    }
+  }
+
   async function toggleAutostartSetting() {
     try {
       const next = !autostartEnabled;
@@ -190,13 +297,41 @@
   }
 
   async function updateTriggerSettings() {
+    localStorage.setItem("stashit_trigger_shake", String(shakeEnabled));
+    localStorage.setItem("stashit_trigger_hotkey", String(hotkeyEnabled));
+    localStorage.setItem("stashit_hotkey_combo", String(hotkeyCombo));
+    localStorage.setItem("stashit_trigger_double_tap", String(doubleTapEnabled));
+    localStorage.setItem("stashit_double_tap_key", String(doubleTapKey));
+    localStorage.setItem("stashit_trigger_edge_dock", String(edgeDockEnabled));
+
     try {
       await invoke("set_trigger_mode", {
         shake: shakeEnabled,
-        autoDrag: autoDragEnabled,
+        hotkey: hotkeyEnabled,
+        hotkeyCombo: Number(hotkeyCombo),
+        doubleTap: doubleTapEnabled,
+        doubleTapKey: Number(doubleTapKey),
+        edgeDock: edgeDockEnabled,
       });
     } catch (e) {
-      console.error(e);
+      console.error("Ошибка обновления триггеров:", e);
+    }
+  }
+
+  function handleMouseLeaveWrapper() {
+    if (edgeDockEnabled && itemsCount === 0 && !showSettings) {
+      if (edgeCollapseTimer !== null) clearTimeout(edgeCollapseTimer);
+      edgeCollapseTimer = window.setTimeout(() => {
+        hideShelf();
+        edgeCollapseTimer = null;
+      }, 350);
+    }
+  }
+
+  function handleMouseEnterWrapper() {
+    if (edgeCollapseTimer !== null) {
+      clearTimeout(edgeCollapseTimer);
+      edgeCollapseTimer = null;
     }
   }
 
@@ -356,8 +491,13 @@
   }
 
   onMount(() => {
-    updateTheme();
+    loadAppSettings();
     loadItems().then(() => syncSelectionWithItems());
+
+    // Инициализируем приём файлов OLE Drop Target на дочерних окнах WebView2
+    setTimeout(() => {
+      invoke("init_drop_target").catch(console.error);
+    }, 150);
 
     // Проверка автозапуска
     invoke<boolean>("check_autostart")
@@ -411,16 +551,30 @@
     });
 
     const unlistenMouseUp = listen("global-mouse-up", () => {
-      // Если мышь отпустили, а карман пуст — аккуратно скрываемся
-      if (items.length === 0 && !isDragOver) {
-        hideShelf();
+      // Больше не прячем карман внезапно при отпускании ЛКМ,
+      // позволяя спокойно перетащить или сбросить файл.
+    });
+
+    const unlistenAbout = listen("open-about-tab", () => {
+      showSettings = true;
+      activeSettingsTab = "about";
+      if (!updateResult && !isCheckingUpdates) {
+        handleCheckUpdates(false);
       }
     });
 
-    // Хоткей Escape для скрытия кармана, Ctrl+A для выделения всех
+    const unlistenUpdateStatus = listen<UpdateCheckResult>("update-status", (event) => {
+      updateResult = event.payload;
+    });
+
+    // Хоткей Escape для закрытия настроек или скрытия кармана, Ctrl+A для выделения всех
     const keyHandler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        hideShelf();
+        if (showSettings) {
+          showSettings = false;
+        } else {
+          hideShelf();
+        }
       } else if ((e.ctrlKey || e.metaKey) && (e.key === "a" || e.key === "A" || e.key === "ф" || e.key === "Ф")) {
         if (items.length > 0) {
           e.preventDefault();
@@ -449,12 +603,18 @@
       window.removeEventListener("dragover", windowDragOver);
       window.removeEventListener("drop", windowDrop);
       cancelClearCountdown();
+      if (edgeCollapseTimer !== null) {
+        clearTimeout(edgeCollapseTimer);
+        edgeCollapseTimer = null;
+      }
       unlistenUpdated.then((f) => f());
       unlistenCleared.then((f) => f());
       unlistenDragCompleted.then((f) => f());
       unlistenEnter.then((f) => f());
       unlistenLeave.then((f) => f());
       unlistenMouseUp.then((f) => f());
+      unlistenAbout.then((f) => f());
+      unlistenUpdateStatus.then((f) => f());
     };
   });
 
@@ -558,6 +718,8 @@
   ondragover={handleContainerDragOver}
   ondragleave={handleContainerDragLeave}
   ondrop={handleContainerDrop}
+  onmouseleave={handleMouseLeaveWrapper}
+  onmouseenter={handleMouseEnterWrapper}
 >
   <!-- Верхний тулбар -->
   <header class="shelf-header">
@@ -604,58 +766,17 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
 
-      <!-- Скрыть / Закрыть -->
-      <button class="icon-btn close" title={t.closeTooltip} onclick={hideShelf}>
+      <!-- Свернуть в трей -->
+      <button class="icon-btn minimize-btn" title={t.minimizeTooltip} onclick={hideShelf}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+
+      <!-- Выход из программы -->
+      <button class="icon-btn close" title={t.quitTooltip} onclick={exitApp}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
   </header>
-
-  <!-- Панель настроек (дропдаун) -->
-  {#if showSettings}
-    <div class="settings-panel">
-      <div class="setting-item">
-        <label>
-          <input 
-            type="checkbox" 
-            bind:checked={shakeEnabled} 
-            onchange={updateTriggerSettings}
-          />
-          <span>{t.shakeTrigger}</span>
-        </label>
-      </div>
-      <div class="setting-item">
-        <label>
-          <input 
-            type="checkbox" 
-            bind:checked={autoDragEnabled} 
-            onchange={updateTriggerSettings}
-          />
-          <span>{t.autoDragTrigger}</span>
-        </label>
-      </div>
-      <div class="setting-item">
-        <label>
-          <input 
-            type="checkbox" 
-            checked={autostartEnabled} 
-            onchange={toggleAutostartSetting}
-          />
-          <span>{t.autostart}</span>
-        </label>
-      </div>
-      <div class="setting-item">
-        <label>
-          <input 
-            type="checkbox" 
-            checked={autoClearEnabled} 
-            onchange={toggleAutoClearSetting}
-          />
-          <span>{t.autoClear}</span>
-        </label>
-      </div>
-    </div>
-  {/if}
 
   <!-- Уведомление о статусе -->
   {#if statusNotice}
@@ -664,8 +785,290 @@
     </div>
   {/if}
 
-  <!-- Основной контент: Дроп-зона или Список файлов -->
-  <div class="shelf-body">
+  <!-- Панель настроек (с вкладками «Управление» и «О программе») -->
+  {#if showSettings}
+    <div class="settings-panel">
+      <!-- Навигация по вкладкам -->
+      <div class="settings-tabs">
+        <button 
+          class="tab-btn" 
+          class:active={activeSettingsTab === "triggers"} 
+          onclick={() => (activeSettingsTab = "triggers")}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>{t.tabSettings}</span>
+        </button>
+        <button 
+          class="tab-btn" 
+          class:active={activeSettingsTab === "about"} 
+          onclick={() => {
+            activeSettingsTab = "about";
+            if (!updateResult && !isCheckingUpdates) {
+              handleCheckUpdates(false);
+            }
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>{t.tabAbout}</span>
+          {#if updateResult?.has_update}
+            <span class="update-badge-dot" title={t.updateAvailable}></span>
+          {/if}
+        </button>
+      </div>
+
+      {#if activeSettingsTab === "triggers"}
+        <div class="tab-content">
+          <div class="settings-title">{t.triggerSection}</div>
+
+          <!-- 1. Встряхивание мыши (Shake) -->
+          <div class="setting-item">
+            <label>
+              <input 
+                type="checkbox" 
+                checked={shakeEnabled} 
+                onchange={(e) => {
+                  shakeEnabled = e.currentTarget.checked;
+                  saveAllSettings();
+                }}
+              />
+              <span>{t.shakeTrigger}</span>
+            </label>
+          </div>
+
+          <!-- 2. Глобальный хоткей -->
+          <div class="setting-item with-select">
+            <label>
+              <input 
+                type="checkbox" 
+                checked={hotkeyEnabled} 
+                onchange={(e) => {
+                  hotkeyEnabled = e.currentTarget.checked;
+                  saveAllSettings();
+                }}
+              />
+              <span>{t.hotkeyTrigger}</span>
+            </label>
+            {#if hotkeyEnabled}
+              <select 
+                class="setting-select"
+                value={hotkeyCombo} 
+                onchange={(e) => {
+                  hotkeyCombo = Number(e.currentTarget.value);
+                  saveAllSettings();
+                }}
+              >
+                {#each t.hotkeyOptions as opt}
+                  <option value={opt.id}>{opt.label}</option>
+                {/each}
+              </select>
+            {/if}
+          </div>
+
+          <!-- 3. Двойное нажатие (Double-tap) -->
+          <div class="setting-item with-select">
+            <label>
+              <input 
+                type="checkbox" 
+                checked={doubleTapEnabled} 
+                onchange={(e) => {
+                  doubleTapEnabled = e.currentTarget.checked;
+                  saveAllSettings();
+                }}
+              />
+              <span>{t.doubleTapTrigger}</span>
+            </label>
+            {#if doubleTapEnabled}
+              <select 
+                class="setting-select"
+                value={doubleTapKey} 
+                onchange={(e) => {
+                  doubleTapKey = Number(e.currentTarget.value);
+                  saveAllSettings();
+                }}
+              >
+                {#each t.doubleTapOptions as opt}
+                  <option value={opt.id}>{opt.label}</option>
+                {/each}
+              </select>
+            {/if}
+          </div>
+
+          <!-- 4. Прилипание к краю экрана (Edge Dock) -->
+          <div class="setting-item">
+            <label>
+              <input 
+                type="checkbox" 
+                checked={edgeDockEnabled} 
+                onchange={(e) => {
+                  edgeDockEnabled = e.currentTarget.checked;
+                  saveAllSettings();
+                }}
+              />
+              <span>{t.edgeDockTrigger}</span>
+            </label>
+          </div>
+
+          <div class="settings-divider"></div>
+
+          <!-- Системные настройки -->
+          <div class="setting-item">
+            <label>
+              <input 
+                type="checkbox" 
+                checked={autostartEnabled} 
+                onchange={toggleAutostartSetting}
+              />
+              <span>{t.autostart}</span>
+            </label>
+          </div>
+          <div class="setting-item">
+            <label>
+              <input 
+                type="checkbox" 
+                checked={autoClearEnabled} 
+                onchange={toggleAutoClearSetting}
+              />
+              <span>{t.autoClear}</span>
+            </label>
+          </div>
+
+          <!-- Кнопка полного выхода из приложения -->
+          <div class="setting-item quit-setting-item">
+            <button class="quit-action-btn" onclick={exitApp}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <span>{t.exitApp}</span>
+            </button>
+          </div>
+        </div>
+      {:else if activeSettingsTab === "about"}
+        <div class="tab-content about-tab-content">
+          <!-- Заголовок / Бренд -->
+          <div class="about-hero">
+            <div class="about-logo-wrapper">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </div>
+            <div class="about-meta">
+              <div class="about-title-row">
+                <span class="about-app-name">StashIt</span>
+                <span class="version-tag">{updateResult?.current_version ? `v${updateResult.current_version}` : t.versionBadge}</span>
+              </div>
+              <p class="about-desc">{t.aboutTagline}</p>
+            </div>
+          </div>
+
+          <!-- Блок обновлений -->
+          <div class="updater-card">
+            <div class="updater-status-header">
+              <div class="status-indicator-box">
+                {#if isCheckingUpdates}
+                  <span class="status-spinner"></span>
+                  <span class="status-text">{t.checkingUpdates}</span>
+                {:else if updateError}
+                  <span class="status-dot error"></span>
+                  <span class="status-text error">{t.updateCheckFailed}</span>
+                {:else if updateResult?.has_update}
+                  <span class="status-dot update"></span>
+                  <span class="status-text update">{t.updateAvailable} <strong class="new-ver">v{updateResult.latest_version}</strong></span>
+                {:else if updateResult && !updateResult.has_update}
+                  <span class="status-dot ok"></span>
+                  <span class="status-text ok">{t.updateLatest}</span>
+                {:else}
+                  <span class="status-dot idle"></span>
+                  <span class="status-text">{t.versionBadge}</span>
+                {/if}
+              </div>
+
+              <button 
+                class="check-now-btn" 
+                disabled={isCheckingUpdates}
+                onclick={() => handleCheckUpdates(true)}
+                title={t.checkUpdates}
+              >
+                <svg class:spin={isCheckingUpdates} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                <span>{t.checkUpdates}</span>
+              </button>
+            </div>
+
+            {#if updateResult?.has_update}
+              <div class="updater-actions">
+                {#if updateResult.setup_url}
+                  <button 
+                    class="action-download-btn primary" 
+                    onclick={() => handleOpenUrl(updateResult?.setup_url)}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>{t.downloadInstaller}</span>
+                  </button>
+                {/if}
+                {#if updateResult.portable_url}
+                  <button 
+                    class="action-download-btn" 
+                    onclick={() => handleOpenUrl(updateResult?.portable_url)}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+                    <span>{t.downloadPortable}</span>
+                  </button>
+                {/if}
+                <button 
+                  class="action-download-btn outline" 
+                  onclick={() => handleOpenUrl(updateResult?.release_url)}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  <span>{t.viewReleaseNotes}</span>
+                </button>
+              </div>
+            {/if}
+
+            <div class="auto-check-row">
+              <label>
+                <input 
+                  type="checkbox" 
+                  checked={autoCheckUpdates} 
+                  onchange={toggleAutoCheckSetting}
+                />
+                <div class="auto-check-texts">
+                  <span class="label-title">{t.autoCheckUpdates}</span>
+                  <span class="label-desc">{t.autoCheckUpdatesDesc}</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Ссылки экосистемы -->
+          <div class="about-links-section">
+            <div class="standard-badge">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>{t.authorEco}</span>
+            </div>
+
+            <div class="about-links-grid">
+              <button 
+                class="eco-link-btn" 
+                onclick={() => handleOpenUrl("https://github.com/kobaltgit/StashIt")}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+                <span>{t.linkGithub}</span>
+              </button>
+
+              <button 
+                class="eco-link-btn" 
+                onclick={() => handleOpenUrl("https://github.com/kobaltgit/StashIt/issues")}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>{t.linkIssues}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      {/if}
+    </div>
+  {:else}
+    <!-- Основной контент: Дроп-зона или Список файлов -->
+    <div class="shelf-body">
     {#if itemsCount === 0}
       <div class="empty-dropzone" class:active-hover={isDragOver}>
         <div class="drop-icon">
@@ -748,9 +1151,10 @@
       </div>
     {/if}
   </div>
+  {/if}
 
   <!-- Нижний футер со сводкой, захватом всей пачки и групповыми действиями -->
-  {#if itemsCount > 0}
+  {#if !showSettings && itemsCount > 0}
     <!-- Главная плашка перетаскивания всей пачки сразу -->
     <div 
       class="master-drag-handle"
@@ -959,8 +1363,417 @@
     margin-top: 8px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     animation: fadeIn 0.15s ease-out;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .settings-panel::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .settings-panel::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+  }
+
+  /* Табы */
+  .settings-tabs {
+    display: flex;
+    gap: 4px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+  }
+
+  .tab-btn:hover {
+    background: var(--card-hover);
+    color: var(--text-main);
+  }
+
+  .tab-btn.active {
+    background: var(--card-hover);
+    color: var(--accent);
+    border-color: rgba(56, 189, 248, 0.3);
+  }
+
+  .update-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 6px #10b981;
+    animation: pulse 1.5s infinite;
+  }
+
+  .tab-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+  }
+
+  .about-tab-content {
+    gap: 10px;
+  }
+
+  /* Раздел «О программе» */
+  .about-hero {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 2px;
+  }
+
+  .about-logo-wrapper {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(16, 185, 129, 0.15));
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .about-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .about-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .about-app-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  .version-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 5px;
+    background: rgba(56, 189, 248, 0.15);
+    color: var(--accent);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+  }
+
+  .about-desc {
+    margin: 0;
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 1.3;
+  }
+
+  /* Карточка проверки обновлений */
+  .updater-card {
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  :global([data-theme="light"]) .updater-card {
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  .updater-status-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .status-indicator-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10.5px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .status-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-muted);
+  }
+
+  .status-text.update {
+    color: #10b981;
+    font-weight: 600;
+  }
+
+  .status-text.error {
+    color: #ef4444;
+  }
+
+  .status-text.ok {
+    color: var(--text-muted);
+  }
+
+  .new-ver {
+    color: #10b981;
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-dot.idle {
+    background: #64748b;
+  }
+
+  .status-dot.ok {
+    background: #10b981;
+  }
+
+  .status-dot.update {
+    background: #38bdf8;
+    box-shadow: 0 0 8px #38bdf8;
+    animation: pulse 1.5s infinite;
+  }
+
+  .status-dot.error {
+    background: #ef4444;
+  }
+
+  .status-spinner {
+    width: 10px;
+    height: 10px;
+    border: 2px solid rgba(56, 189, 248, 0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  .check-now-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 7px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--card-hover);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .check-now-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .check-now-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .updater-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+  }
+
+  .action-download-btn {
+    flex: 1;
+    min-width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid var(--border-color);
+    background: var(--card-hover);
+    color: var(--text-main);
+  }
+
+  .action-download-btn.primary {
+    background: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+  }
+
+  .action-download-btn.primary:hover {
+    background: #0369a1;
+  }
+
+  .action-download-btn.outline {
+    background: transparent;
+    color: var(--text-muted);
+  }
+
+  .action-download-btn.outline:hover {
+    color: var(--text-main);
+    border-color: var(--text-muted);
+  }
+
+  .auto-check-row {
+    padding-top: 6px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .auto-check-row label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  .auto-check-texts {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .label-title {
+    font-size: 10.5px;
+    color: var(--text-main);
+  }
+
+  .label-desc {
+    font-size: 9px;
+    color: var(--text-muted);
+  }
+
+  /* Ссылки экосистемы Kobalt */
+  .about-links-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 4px;
+  }
+
+  .standard-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--accent);
+    opacity: 0.9;
+  }
+
+  .about-links-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .eco-link-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 6px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .eco-link-btn:hover {
+    background: var(--card-hover);
+    color: var(--text-main);
+    border-color: var(--border-color);
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  .spin {
+    animation: spin 0.8s linear infinite;
+  }
+
+  .settings-title {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--accent);
+    margin-bottom: 2px;
+  }
+
+  .settings-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 4px 0;
+  }
+
+  .setting-item.with-select {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .setting-select {
+    background: var(--card-hover);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-main);
+    font-size: 10px;
+    padding: 2px 4px;
+    outline: none;
+    cursor: pointer;
+    max-width: 135px;
+  }
+
+  .setting-select option {
+    background: #1e293b;
+    color: #f1f5f9;
   }
 
   .setting-item label {
@@ -970,6 +1783,7 @@
     font-size: 11px;
     cursor: pointer;
     color: var(--text-muted);
+    flex: 1;
   }
 
   .setting-item label:hover {
@@ -978,6 +1792,34 @@
 
   .setting-item input[type="checkbox"] {
     accent-color: var(--accent);
+  }
+
+  .quit-setting-item {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .quit-action-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .quit-action-btn:hover {
+    background: rgba(239, 68, 68, 0.22);
+    color: #dc2626;
   }
 
   .toast-notice {

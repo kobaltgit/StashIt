@@ -5,10 +5,10 @@ mod drop_target;
 mod text_drag;
 mod hook;
 mod models;
+pub mod updater;
 
 use autostart::{is_autostart_enabled, set_autostart};
 use models::StashItem;
-use std::sync::atomic::Ordering;
 use std::sync::Mutex;
 use tauri::{
     menu::{Menu, MenuItem},
@@ -70,10 +70,31 @@ fn hide_shelf(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 fn show_shelf(app: AppHandle) -> Result<(), String> {
     if let Some(win) = app.get_webview_window("main") {
+        #[cfg(windows)]
+        let _ = drop_target::win_drop::register_window_drop_target(&win);
         win.show().map_err(|e| e.to_string())?;
         win.set_focus().map_err(|e| e.to_string())?;
     }
     Ok(())
+}
+
+#[tauri::command]
+fn init_drop_target(window: tauri::WebviewWindow) -> Result<(), String> {
+    #[cfg(windows)]
+    drop_target::win_drop::register_window_drop_target(&window).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn exit_app(app: AppHandle) {
+    #[cfg(windows)]
+    hook::win_hook::stop_input_monitor();
+    for (_, window) in app.webview_windows() {
+        #[cfg(windows)]
+        drop_target::win_drop::unregister_window_drop_target(&window);
+        let _ = window.destroy();
+    }
+    std::process::exit(0);
 }
 
 #[tauri::command]
@@ -87,10 +108,125 @@ fn check_autostart() -> bool {
     is_autostart_enabled()
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct AppConfig {
+    pub shake: bool,
+    pub hotkey: bool,
+    pub hotkey_combo: u8,
+    pub double_tap: bool,
+    pub double_tap_key: u8,
+    pub edge_dock: bool,
+    pub theme: String,
+    pub lang: String,
+    pub auto_clear: bool,
+    #[serde(default = "default_true")]
+    pub auto_check_updates: bool,
+    #[serde(default)]
+    pub last_update_check_time: u64,
+    #[serde(default)]
+    pub last_notified_version: String,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self {
+            shake: true,
+            hotkey: true,
+            hotkey_combo: 0,
+            double_tap: true,
+            double_tap_key: 0,
+            edge_dock: false,
+            theme: "system".to_string(),
+            lang: "ru".to_string(),
+            auto_clear: true,
+            auto_check_updates: true,
+            last_update_check_time: 0,
+            last_notified_version: String::new(),
+        }
+    }
+}
+
+pub fn get_config_path() -> std::path::PathBuf {
+    let base = std::env::var("APPDATA")
+        .unwrap_or_else(|_| std::env::temp_dir().to_string_lossy().to_string());
+    let dir = std::path::Path::new(&base).join("StashIt");
+    let _ = std::fs::create_dir_all(&dir);
+    dir.join("config.json")
+}
+
+pub fn load_config() -> AppConfig {
+    let path = get_config_path();
+    if path.exists() {
+        if let Ok(content) = std::fs::read_to_string(&path) {
+            if let Ok(cfg) = serde_json::from_str::<AppConfig>(&content) {
+                return cfg;
+            }
+        }
+    }
+    AppConfig::default()
+}
+
+pub fn save_config(cfg: &AppConfig) -> Result<(), String> {
+    let path = get_config_path();
+    let json = serde_json::to_string_pretty(cfg).map_err(|e| e.to_string())?;
+    std::fs::write(&path, json).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[tauri::command]
-fn set_trigger_mode(shake: bool, auto_drag: bool) {
-    hook::win_hook::SHAKE_DETECTION_ENABLED.store(shake, Ordering::Relaxed);
-    hook::win_hook::DRAG_DETECTION_ENABLED.store(auto_drag, Ordering::Relaxed);
+fn get_app_config() -> AppConfig {
+    load_config()
+}
+
+#[tauri::command]
+fn save_app_config(config: AppConfig) -> Result<(), String> {
+    #[cfg(windows)]
+    hook::win_hook::apply_settings(
+        config.shake,
+        config.hotkey,
+        config.hotkey_combo,
+        config.double_tap,
+        config.double_tap_key,
+        config.edge_dock,
+    );
+    save_config(&config)
+}
+
+#[tauri::command]
+fn set_trigger_mode(
+    shake: bool,
+    hotkey: bool,
+    hotkey_combo: u8,
+    double_tap: bool,
+    double_tap_key: u8,
+    edge_dock: bool,
+) {
+    #[cfg(windows)]
+    hook::win_hook::apply_settings(shake, hotkey, hotkey_combo, double_tap, double_tap_key, edge_dock);
+}
+
+#[tauri::command]
+fn check_for_updates(app: AppHandle, force: bool) -> Result<updater::UpdateCheckResult, String> {
+    updater::check_updates_with_cooldown(&app, force)
+}
+
+#[tauri::command]
+fn open_external_url(url: String) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        use std::process::Command;
+        use std::os::windows::process::CommandExt;
+        Command::new("cmd")
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW
+            .args(["/c", "start", "", &url])
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 /// Sanitize a string for use as a file name (removes illegal Windows chars, max 60 chars).
@@ -357,16 +493,23 @@ pub fn run() {
             toggle_autostart,
             check_autostart,
             set_trigger_mode,
+            get_app_config,
+            save_app_config,
             drag_item,
             create_temp_file,
             drag_text_item,
-            copy_to_clipboard
+            copy_to_clipboard,
+            init_drop_target,
+            exit_app,
+            check_for_updates,
+            open_external_url
         ])
         .setup(|app| {
             let show_i = MenuItem::with_id(app, "show", "Показать StashIt", true, None::<&str>)?;
+            let about_i = MenuItem::with_id(app, "about", "О программе", true, None::<&str>)?;
             let clear_i = MenuItem::with_id(app, "clear", "Очистить карман", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "Выход", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show_i, &clear_i, &quit_i])?;
+            let menu = Menu::with_items(app, &[&show_i, &about_i, &clear_i, &quit_i])?;
 
             let tray_builder = TrayIconBuilder::new()
                 .menu(&menu)
@@ -386,6 +529,13 @@ pub fn run() {
                             let _ = window.set_focus();
                         }
                     }
+                    "about" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                            let _ = window.emit("open-about-tab", ());
+                        }
+                    }
                     "clear" => {
                         let state: State<AppState> = app.state();
                         let mut items = state.items.lock().unwrap();
@@ -394,7 +544,7 @@ pub fn run() {
                     }
                     "quit" => {
                         #[cfg(windows)]
-                        hook::win_hook::stop_mouse_monitor();
+                        hook::win_hook::stop_input_monitor();
 
                         for (_, window) in app.webview_windows() {
                             #[cfg(windows)]
@@ -429,9 +579,21 @@ pub fn run() {
             // Зачистка временных файлов предыдущей сессии
             cleanup_temp_dir();
 
-            // Запуск фонового мониторинга мыши (Shake to Show & Auto on Drag)
+            // Применяем сохраненные настройки пользователя к хукам
+            let initial_config = load_config();
             #[cfg(windows)]
-            hook::win_hook::start_mouse_monitor(app.handle().clone());
+            hook::win_hook::apply_settings(
+                initial_config.shake,
+                initial_config.hotkey,
+                initial_config.hotkey_combo,
+                initial_config.double_tap,
+                initial_config.double_tap_key,
+                initial_config.edge_dock,
+            );
+
+            // Запуск фонового мониторинга ввода (Shake, Hotkey, Double-Tap, Edge Dock)
+            #[cfg(windows)]
+            hook::win_hook::start_input_monitor(app.handle().clone());
 
             // Регистрация кастомного OLE IDropTarget (файлы + URL/текст)
             #[cfg(windows)]
@@ -441,6 +603,9 @@ pub fn run() {
                 }
             }
 
+            // Фоновая проверка обновлений (через 3 сек после старта, затем раз в неделю)
+            updater::start_background_updater(app.handle().clone());
+
             Ok(())
         })
         .build(tauri::generate_context!())
@@ -448,7 +613,7 @@ pub fn run() {
         .run(|app_handle, event| {
             if let tauri::RunEvent::ExitRequested { .. } = event {
                 #[cfg(windows)]
-                hook::win_hook::stop_mouse_monitor();
+                hook::win_hook::stop_input_monitor();
 
                 for (_, window) in app_handle.webview_windows() {
                     #[cfg(windows)]

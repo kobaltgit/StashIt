@@ -34,7 +34,7 @@
 
 **StashIt** — сверхлегковесный нативный плавающий карман для Windows 10 & 11, входящий в экосистему системных инструментов **Kobalt Tools** ([MiniBin](https://github.com/kobaltgit/minibin), [Undoit](https://github.com/kobaltgit/undoit), [PolyShift](https://github.com/kobaltgit/polyshift), [PeekIt](https://github.com/kobaltgit/peekit)).
 
-Служит временным буфером для перетаскивания файлов, картинок, веб-ссылок и текста при навигации между папками и рабочими пространствами. В состоянии покоя приложение **100% невидимо**. При перетаскивании контента карман материализуется прямо у курсора по лёгкой встряске мыши или при начале движения.
+Служит временным буфером для перетаскивания файлов, картинок, веб-ссылок и текста при навигации между папками и рабочими пространствами. В состоянии покоя приложение **100% невидимо**. Карман вызывается прямо у курсора по лёгкой встряске мыши при перетаскивании (Shake), глобальному хоткею, двойному нажатию клавиши или выдвигается от края экрана (Edge Dock). Все способы можно гибко настроить в меню приложения.
 
 Потребляет **менее 25 МБ RAM** благодаря ядру на **Rust 2021** и реактивному интерфейсу на **Svelte 5** под движком **Tauri v2**.
 
@@ -52,10 +52,13 @@
 ### 🎯 Ключевые возможности
 
 - 🫨 **Встряска мыши (Shake to Show):** Зажмите файл и качните мышь — карман появится прямо рядом с курсором (как в Dropover).
-- 🎯 **Автопоявление при перетаскивании:** Опциональный режим открытия при начале Drag & Drop (как в Yoink).
+- ⌨️ **Глобальный хоткей (Global Shortcut):** Мгновенный вызов и скрытие по комбинации клавиш (по умолчанию `Ctrl + Shift + Space`, `Alt + S`, `Ctrl + Alt + S`, `Win + Alt + S`).
+- ⚡ **Двойное нажатие клавиши (Double-tap Modifier):** Быстрое двойное нажатие `Ctrl` или `Shift` для вызова кармана одной рукой без сложных аккордов.
+- 🧲 **Край экрана (Edge Dock / Шторка):** Подведите курсор к кромке экрана — карман автоматически выдвинется навстречу; если мышь ушла и карман пуст — аккуратно свернется.
 - 📦 **Захват всей стопки:** Перетаскивание как отдельных файлов, так и всей пачки сразу через мастер-ручку.
 - ⏳ **Умный таймер автоочистки (5 сек):** Мягкий обратный отсчёт после переноса файлов; карман скрывается автоматически.
 - 📋 **Умный двойной буфер и Drag-out заметок:** При копировании или переносе заметок StashIt отдает сразу два формата: в текстовые редакторы вставляется текст, а в папки Проводника — готовые файлы `.txt` и `.url`.
+- 🔄 **Встроенная проверка обновлений и Раздел «О программе»:** Двухвкладочная панель настроек («Управление» и «О программе»), вызов из меню трея, прямое скачивание новых релизов с GitHub и тихие уведомления.
 - 🎨 **Адаптивный Fluent Acrylic интерфейс:** Тёмная, светлая и системная темы с акриловым размытием.
 - 🚀 **Безопасная автозагрузка:** Запуск через реестр `HKCU` без запросов UAC.
 
@@ -72,7 +75,7 @@
 
 **StashIt** is an ultra-lightweight, native drag-and-drop shelf for Windows 10 & 11 and part of the **Kobalt Tools** desktop ecosystem ([MiniBin](https://github.com/kobaltgit/minibin), [Undoit](https://github.com/kobaltgit/undoit), [PolyShift](https://github.com/kobaltgit/polyshift), [PeekIt](https://github.com/kobaltgit/peekit)).
 
-It acts as a temporary holding shelf for files, images, URLs, and text snippets while you navigate between folders and workspaces. When idle, the app is **100% invisible**. Whenever you drag files, a quick cursor shake summons the shelf right next to your mouse pointer.
+It acts as a temporary holding shelf for files, images, URLs, and text snippets while you navigate between folders and workspaces. When idle, the app is **100% invisible**. Summon the shelf right next to your mouse pointer via mouse shake while dragging (Shake), global hotkey, double-tapping modifier keys, or edge docking drawer mode. All methods are fully configurable in the settings.
 
 Consumes **under 25 MB RAM** built with native **Rust 2021** and **Svelte 5** under **Tauri v2**.
 
@@ -90,10 +93,13 @@ Consumes **under 25 MB RAM** built with native **Rust 2021** and **Svelte 5** un
 ### 🎯 Core Features
 
 - 🫨 **Shake to Show:** Hold and shake mouse while dragging files to instantly summon shelf at cursor position.
-- 🎯 **Auto on Drag:** Optional mode to reveal the shelf immediately upon drag initiation.
+- ⌨️ **Global Shortcut:** Instant toggle at cursor with customizable hotkeys (default `Ctrl + Shift + Space`, `Alt + S`, `Ctrl + Alt + S`, `Win + Alt + S`).
+- ⚡ **Double-tap Modifier:** Quick double-tap of `Ctrl` or `Shift` to summon the shelf with one hand without keyboard acrobatics.
+- 🧲 **Screen Edge Dock (Auto-expand Drawer):** Hover the cursor against the screen edge to expand the shelf; automatically collapses when the mouse moves away if empty.
 - 📦 **Batch Drag Handle:** Drag all stashed files or selected items simultaneously with one gesture.
 - ⏳ **Smart Auto-Clear Countdown (5s):** Automatically clears and hides the shelf after files are moved out.
 - 📋 **Smart Dual Clipboard & Note Drag-out:** When copying or dragging notes, StashIt provides both text and file formats simultaneously: text editors get text, while Windows Explorer folders get real `.txt` and `.url` files!
+- 🔄 **Built-in GitHub Release Updater & "About" Section:** Tabbed settings UI ("Controls" and "About"), direct tray menu entry, instant downloads for new releases, and silent toast notifications.
 - 🎨 **Fluent Acrylic UI:** Beautiful dark and light themes matching Windows 11 aesthetics.
 - 🚀 **Clean User-Mode Startup:** Registry-based autorun in `HKCU` without intrusive UAC popups.
 

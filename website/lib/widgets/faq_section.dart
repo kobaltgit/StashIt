@@ -11,8 +11,8 @@ class FaqSection extends StatelessWidget {
       {
         'qRu': 'Как вызвать плавающий карман StashIt?',
         'qEn': 'How do I trigger the StashIt shelf?',
-        'aRu': 'Основной и рекомендуемый способ — зажать файл левой кнопкой мыши и слегка встряхнуть (Shake, без ложных срабатываний). Режим появления сразу при перетаскивании (Auto on Drag) является экспериментальным (может срабатывать при обычном выделении текста) и по умолчанию отключен. Также карман открывается по иконке в трее.',
-        'aEn': 'The primary and recommended method is to hold a file and shake slightly (Shake, free of false positives). Auto on Drag is an experimental feature (can accidentally trigger during normal mouse text selection) and is disabled by default. You can also click the tray icon.',
+        'aRu': 'Поддерживаются 4 независимых способа: встряхивание мышью при перетаскивании (Shake), глобальный хоткей (по умолчанию Ctrl+Shift+Space), двойное быстрое нажатие 2×Ctrl и выдвижение от края экрана (Edge Dock). Каждый способ можно включить или выключить в настройках.',
+        'aEn': 'StashIt supports 4 independent triggers: mouse shake while dragging, global shortcut (default Ctrl+Shift+Space), 2×Ctrl double-tap, and screen edge docking. Each method can be enabled or disabled in the settings menu.',
       },
       {
         'qRu': 'Висит ли что-нибудь на экране, когда я не работаю с файлами?',
@@ -31,6 +31,12 @@ class FaqSection extends StatelessWidget {
         'qEn': 'Does it require Administrator / UAC permissions?',
         'aRu': 'Нет. Приложение работает автономно, а автозагрузка безопасно настраивается через ветку реестра текущего пользователя HKCU без UAC.',
         'aEn': 'No. The app runs portably/per-user, and autostart is written safely to current user registry HKCU without UAC.',
+      },
+      {
+        'qRu': 'Как обновляется StashIt?',
+        'qEn': 'How does StashIt update?',
+        'aRu': 'В программе есть раздел «О программе» с проверкой новых релизов прямо из GitHub Releases. Приложение может ненавязчиво уведомлять о свежих версиях или проверять их по нажатию кнопки.',
+        'aEn': 'StashIt includes an "About" section checking GitHub Releases directly. It can notify you silently about new versions or check on demand.',
       },
     ];
 
