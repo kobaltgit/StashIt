@@ -47,23 +47,20 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'StashIt v__VERSION__'
           releaseBody: |
-            ## 🚀 StashIt v__VERSION__ — 4 способа вызова, вкладки настроек, раздел «О программе» и автопроверка обновлений / 4 Activation Triggers, Settings Tabs, About Section & GitHub Auto-Updater
+            ## 🚀 StashIt v__VERSION__ — Поддержка нескольких мониторов / Full Multi-Monitor Support
 
             ### 🇷🇺 Что нового в версии v__VERSION__:
-            * **4 независимых способа вызова кармана (Issue #4)**:
-              1. **Встряхивание мыши (Shake to Show)**: проверенный эргономичный жест с зажатым ЛКМ при перетаскивании.
-              2. **Глобальный хоткей (Global Shortcut)**: мгновенный toggle кармана по сочетанию клавиш (по умолчанию `Ctrl + Shift + Space`, с возможностью выбора `Alt + S`, `Ctrl + Alt + S`, `Win + Alt + S`, `Ctrl + Shift + X`).
-              3. **Двойное быстрое нажатие модификатора (Double-tap)**: открытие кармана по быстрому двойному нажатию `Ctrl` или `Shift` (алгоритм защищен от случайных нажатий при обычном использовании `Ctrl+C`, `Ctrl+V`).
-              4. **Прилипание к краю экрана (Edge Dock)**: окно автоматически выдвигается навстречу курсору у границы экрана при перетаскивании или удержании курсора; если файлов нет и курсор уходит — аккуратно сворачивается.
-            * **Вкладки настроек и Раздел «О программе» (по стандарту Kobalt Tools)**:
-              - Панель настроек разделена на две удобные вкладки: **[Управление]** (триггеры, автостарт, автоочистка, выход) и **[О программе]** (версия, проверка обновлений, ссылки экосистемы).
-              - В контекстное меню системного трея добавлен пункт **«О программе»**, открывающий соответствующую вкладку.
-            * **Встроенная система проверки обновлений (GitHub Releases)**:
-              - Легковесный Zero-Dependency чекер версий на базе скрытого PowerShell `Invoke-RestMethod` (строгое сохранение потребления памяти <25 МБ RAM).
-              - Сравнение версий по SemVer, автоматическое обнаружение ссылок на установщик (`Setup.exe` / `msi`) и портативную версию (`Portable.exe` / `zip`).
-              - Нативные тост-уведомления Windows при выходе новой версии с защитой от спама (cooldown).
-              - Возможность ручной проверки в один клик и опциональная тихая еженедельная автопроверка.
-            * **Удаление случайного срабатывания**: упразднен экспериментальный режим открытия кармана по смещению мыши (Auto on Drag), вызывавший ложные срабатывания при выделении текста.
+            * **Полная поддержка мультимониторных конфигураций (Multi-Monitor Support)**:
+              - **Динамическое определение активного монитора**: встряхивание (Shake), глобальный хоткей (`Ctrl + Shift + Space`) и двойное нажатие клавиши (`2× Ctrl` / `2× Shift`) теперь мгновенно открывают карман ровно на том мониторе, где находится курсор в момент действия.
+              - **Позиционирование в рабочей области (`rcWork`)**: окно кармана позиционируется строго внутри границ текущего экрана с учётом индивидуального положения панели задач каждого монитора.
+              - **Интеллектуальный Edge Dock на стыках экранов**:
+                - **Сквозной проход на межмониторных стыках**: при перемещении курсора или перетаскивании файлов с экрана на экран карман не выскакивает ложно и не мешает движению мыши.
+                - **Внешние кромки**: на физических внешних границах стола (где за кромкой нет соседа) Edge Dock открывает карман мгновенно.
+                - **Одиночный монитор**: при наличии только одного экрана обе кромки автоматически активны без дополнительных настроек.
+            * **4 способа активации и Раздел «О программе» (v1.2.x)**:
+              - 4 независимых триггера (Shake, Hotkey, 2×Ctrl, Edge Dock) с индивидуальной настройкой.
+              - Вкладки меню: «Управление» и «О программе».
+              - Встроенный Zero-Dependency чекер обновлений с GitHub Releases.
             * **Автоматическая CI/CD сборка релизов**: автоматическая генерация трёх вариантов дистрибутива:
               - **`StashIt___VERSION___x64-setup.exe`** — быстрый NSIS инсталлятор (без UAC)
               - **`StashIt___VERSION___x64_en-US.msi`** — MSI пакет установщика Windows
@@ -72,20 +69,17 @@ jobs:
             ---
 
             ### 🇬🇧 What's New in v__VERSION__:
-            * **4 Independent Activation Methods (Issue #4)**:
-              1. **Mouse Shake (Shake to Show)**: reliable gesture with left mouse button held while dragging.
-              2. **Global Hotkey (Global Shortcut)**: instant toggle at mouse cursor via customizable keyboard combinations (default `Ctrl + Shift + Space`, selectable `Alt + S`, `Ctrl + Alt + S`, `Win + Alt + S`, `Ctrl + Shift + X`).
-              3. **Double-Tap Modifier**: summon shelf by double-tapping `Ctrl` or `Shift` within 350ms (cancels on other keys to prevent false triggers during `Ctrl+C` / `Ctrl+V`).
-              4. **Screen Edge Dock**: shelf automatically slides in when cursor moves to the screen edge; auto-collapses on mouse leave if shelf is empty.
-            * **Settings Tabs & "About" Section (Kobalt Tools Standard)**:
-              - Settings panel organized into two tabs: **[Controls]** (triggers, autostart, auto-clear, quit) and **[About]** (version badge, release updater, ecosystem links).
-              - Added direct **"About"** entry to the system tray context menu.
-            * **Built-in GitHub Release Updater**:
-              - Zero-dependency update checker using background PowerShell `Invoke-RestMethod` (preserving strict <25 MB RAM ceiling).
-              - SemVer comparison, auto-detecting direct download links for installer (`Setup.exe`/`msi`) and portable builds (`Portable.exe`/`zip`).
-              - Native Windows Toast notifications on new releases with intelligent cooldown logic.
-              - One-click manual check button and optional silent weekly auto-check.
-            * **Removed False-Trigger Drag Mode**: removed experimental distance-based "Auto on Drag" trigger to eliminate false positives during text selection.
+            * **Full Multi-Monitor Support**:
+              - **Dynamic Active Monitor Detection**: mouse shake (Shake to Show), global shortcuts (`Ctrl + Shift + Space`), and double-tap modifier triggers (`2× Ctrl` / `2× Shift`) now instantly summon the shelf on the exact monitor where the mouse cursor is located.
+              - **Precise Work Area Clamping (`rcWork`)**: shelf coordinates are constrained strictly within the active monitor's work area, respecting per-monitor taskbars and virtual desktop offsets.
+              - **Intelligent Edge Dock on Multi-Display Setups**:
+                - **Seamless Inter-Monitor Seams**: moving cursor or dragging files across monitors will not accidentally trigger the shelf, preventing interference with drag-and-drop between screens.
+                - **Outer Screen Edges**: physical outer boundaries without neighbor displays expand the shelf smoothly.
+                - **Single Monitor Setup**: on single-display setups, both left and right edges remain automatically active.
+            * **4 Activation Triggers & "About" Section (v1.2.x)**:
+              - 4 independent triggers (Shake, Hotkey, 2×Ctrl, Edge Dock) with customizable toggles.
+              - Tabbed Settings UI: "Controls" and "About".
+              - Built-in zero-dependency GitHub Release updater.
             * **Automated CI/CD Release Builds**: automatic generation of 3 distribution flavors:
               - **`StashIt___VERSION___x64-setup.exe`** — fast NSIS installer (no UAC required)
               - **`StashIt___VERSION___x64_en-US.msi`** — Windows Installer package (MSI)

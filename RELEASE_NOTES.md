@@ -1,5 +1,28 @@
 # 📝 История версий StashIt (Release Notes)
 
+## [1.2.1] - 2026-10-05
+### 🇷🇺 Что нового:
+- **Полная поддержка мультимониторных конфигураций (Multi-Monitor Support)**:
+  - **Динамическое определение активного монитора**: встряхивание (Shake), глобальный хоткей (`Ctrl + Shift + Space`) и двойное нажатие клавиши (`2× Ctrl` / `2× Shift`) теперь мгновенно открывают карман ровно на том мониторе, где находится курсор в момент действия.
+  - **Позиционирование в рабочей области (`rcWork`)**: окно кармана позиционируется строго внутри границ текущего экрана с учётом индивидуального положения панели задач каждого монитора.
+  - **Интеллектуальный Edge Dock на стыках экранов**:
+    - **Сквозной проход на межмониторных стыках**: при перемещении курсора или перетаскивании файлов с экрана на экран карман не выскакивает ложно и не мешает движению мыши.
+    - **Внешние кромки**: на физических внешних границах стола (где за кромкой нет соседа) Edge Dock открывает карман мгновенно.
+    - **Одиночный монитор**: при наличии только одного экрана обе кромки автоматически активны без дополнительных настроек.
+
+---
+
+### 🇬🇧 What's New:
+- **Full Multi-Monitor Support**:
+  - **Dynamic Active Monitor Detection**: mouse shake (Shake to Show), global shortcuts (`Ctrl + Shift + Space`), and double-tap modifier triggers (`2× Ctrl` / `2× Shift`) now instantly summon the shelf on the exact monitor where the mouse cursor is located.
+  - **Precise Work Area Clamping (`rcWork`)**: shelf coordinates are constrained strictly within the active monitor's work area, respecting per-monitor taskbars and virtual desktop offsets.
+  - **Intelligent Edge Dock on Multi-Display Setups**:
+    - **Seamless Inter-Monitor Seams**: moving cursor or dragging files across monitors will not accidentally trigger the shelf, preventing interference with drag-and-drop between screens.
+    - **Outer Screen Edges**: physical outer boundaries without neighbor displays expand the shelf smoothly.
+    - **Single Monitor Setup**: on single-display setups, both left and right edges remain automatically active.
+
+---
+
 ## [1.2.0] - 2026-10-05
 ### 🇷🇺 Что нового:
 - **4 независимых способа вызова кармана (Issue #4)**:

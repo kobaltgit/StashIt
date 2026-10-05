@@ -18,7 +18,7 @@ export const translations = {
 
     // About & Updates
     aboutTagline: 'Легковесный плавающий карман для Windows',
-    versionBadge: 'v1.2.0',
+    versionBadge: 'v1.2.1',
     checkingUpdates: 'Проверка...',
     updateAvailable: 'Доступно обновление',
     updateLatest: 'У вас актуальная версия',
@@ -102,7 +102,7 @@ export const translations = {
 
     // About & Updates
     aboutTagline: 'Lightweight floating file shelf for Windows',
-    versionBadge: 'v1.2.0',
+    versionBadge: 'v1.2.1',
     checkingUpdates: 'Checking...',
     updateAvailable: 'Update available',
     updateLatest: 'You have the latest version',
