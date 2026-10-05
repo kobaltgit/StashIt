@@ -45,12 +45,14 @@
 | **Стек технологий** | **Rust + Tauri v2 + Svelte 5** | Swift / macOS Native | Electron + Node.js |
 | **Платформа** | **Windows 10 & 11** | macOS Only | Windows / Linux / macOS |
 | **ОЗУ в фоне** | **15–20 МБ** | 25–40 МБ | 150–300 МБ |
+| **Обмен с телефоном (Wi-Fi)** | **Да (QR-код, без облаков)** | Через iCloud / AirDrop | Нет / сторонние сервисы |
 | **Холодный запуск** | **~50 мс** | Нативно macOS | 1.5–2.5 сек |
 | **Размер установщика** | **~4.5 МБ** | App Store | > 80 МБ |
 | **Права администратора** | **Не требуются (чистый HKCU)** | Не требуются | Зависит от пакета |
 
 ### 🎯 Ключевые возможности
 
+- 📲 **Двусторонний обмен с телефоном по Wi-Fi (QR-код):** Мгновенная передача фото, камеры, файлов и заметок со смартфона в карман на ПК и скачивание обратно в один клик без регистрации и облаков.
 - 🫨 **Встряска мыши (Shake to Show):** Зажмите файл и качните мышь — карман появится прямо рядом с курсором (как в Dropover).
 - ⌨️ **Глобальный хоткей (Global Shortcut):** Мгновенный вызов и скрытие по комбинации клавиш (по умолчанию `Ctrl + Shift + Space`, `Alt + S`, `Ctrl + Alt + S`, `Win + Alt + S`).
 - ⚡ **Двойное нажатие клавиши (Double-tap Modifier):** Быстрое двойное нажатие `Ctrl` или `Shift` для вызова кармана одной рукой без сложных аккордов.
@@ -86,12 +88,14 @@ Consumes **under 25 MB RAM** built with native **Rust 2021** and **Svelte 5** un
 | **Tech Stack** | **Rust + Tauri v2 + Svelte 5** | Swift / macOS Native | Electron + Node.js |
 | **Platform** | **Windows 10 & 11** | macOS Only | Windows / Linux / macOS |
 | **Idle RAM** | **15–20 MB** | 25–40 MB | 150–300 MB |
+| **Phone Drop (Wi-Fi)** | **Yes (QR-code, zero-cloud)** | Via iCloud / AirDrop | No / third-party clouds |
 | **Cold Launch** | **~50 ms** | macOS Native | 1.5–2.5 sec |
 | **Installer Size** | **~4.5 MB** | App Store | > 80 MB |
 | **Admin Rights** | **Zero Admin (pure HKCU)** | Not required | Package dependent |
 
 ### 🎯 Core Features
 
+- 📲 **Two-Way Wi-Fi Phone Drop (QR Code):** Instant wireless transfer of photos, live camera shots, files, and text notes between phone and desktop with zero cloud accounts or setup.
 - 🫨 **Shake to Show:** Hold and shake mouse while dragging files to instantly summon shelf at cursor position.
 - ⌨️ **Global Shortcut:** Instant toggle at cursor with customizable hotkeys (default `Ctrl + Shift + Space`, `Alt + S`, `Ctrl + Alt + S`, `Win + Alt + S`).
 - ⚡ **Double-tap Modifier:** Quick double-tap of `Ctrl` or `Shift` to summon the shelf with one hand without keyboard acrobatics.

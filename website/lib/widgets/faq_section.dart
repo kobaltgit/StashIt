@@ -33,6 +33,12 @@ class FaqSection extends StatelessWidget {
         'aEn': 'No. The app runs portably/per-user, and autostart is written safely to current user registry HKCU without UAC.',
       },
       {
+        'qRu': 'Как устроен беспроводной обмен с телефоном по Wi-Fi?',
+        'qEn': 'How does wireless Phone Drop over Wi-Fi work?',
+        'aRu': 'Нажмите на значок телефона в шапке кармана — появится окно с QR-кодом (устройства должны быть в одной локальной сети Wi-Fi). Отсканируйте код камерой смартфона: откроется защищённая веб-страница. Вы сможете отправлять фотографии, снимки с камеры, файлы и заметки прямо в карман на ПК, а также скачивать файлы с ПК на телефон или делиться ими через системное меню смартфона. Без сторонних серверов, облаков и регистрации.',
+        'aEn': 'Click the phone icon in the shelf header to open the pairing QR code (devices must share the same Wi-Fi network). Scan it with your smartphone camera to open a secure mobile web app. You can upload photos, shoot camera pictures, send files or text notes directly into the desktop shelf, and download items back to your phone or share them via the mobile share sheet. No cloud accounts, zero setup, 100% local.',
+      },
+      {
         'qRu': 'Как обновляется StashIt?',
         'qEn': 'How does StashIt update?',
         'aRu': 'В программе есть раздел «О программе» с проверкой новых релизов прямо из GitHub Releases. Приложение может ненавязчиво уведомлять о свежих версиях или проверять их по нажатию кнопки.',

@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>StashIt Local Drop</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card-bg: rgba(26, 30, 44, 0.75);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --accent-glow: rgba(59, 130, 246, 0.35);
+      --success: #10b981;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --radius: 16px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f3f4f6;
+        --card-bg: rgba(255, 255, 255, 0.85);
+        --card-border: rgba(0, 0, 0, 0.08);
+        --accent: #2563eb;
+        --accent-hover: #1d4ed8;
+        --accent-glow: rgba(37, 99, 235, 0.25);
+        --success: #059669;
+        --text: #111827;
+        --text-muted: #6b7280;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px 16px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.9); }
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .lang-switch {
+      display: inline-flex;
+      background: rgba(125, 125, 125, 0.12);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .lang-segment {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 5px 11px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .lang-segment:active {
+      transform: scale(0.95);
+    }
+
+    .lang-segment.active {
+      background: var(--accent);
+      color: #ffffff !important;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px 0;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+
+    /* Card Panels */
+    .panel {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel.active {
+      display: flex;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Upload Actions */
+    .upload-zone {
+      border: 2px dashed var(--accent);
+      border-radius: 14px;
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      background: rgba(59, 130, 246, 0.05);
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .upload-zone:active {
+      background: rgba(59, 130, 246, 0.12);
+      transform: scale(0.98);
+    }
+
+    .upload-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .upload-title {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .upload-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .btn-secondary {
+      background: rgba(125, 125, 125, 0.1);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+
+    .btn-secondary:active {
+      background: rgba(125, 125, 125, 0.2);
+    }
+
+    /* Text send area */
+    .text-area {
+      width: 100%;
+      min-height: 80px;
+      background: rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      resize: vertical;
+      margin-bottom: 10px;
+      outline: none;
+    }
+
+    .text-area:focus {
+      border-color: var(--accent);
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px var(--accent-glow);
+      transition: background 0.2s;
+    }
+
+    .btn-primary:active {
+      background: var(--accent-hover);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Items List (From PC) */
+    .items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 30px 16px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .item-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: rgba(125, 125, 125, 0.07);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      transition: transform 0.1s ease;
+    }
+
+    .item-card:active {
+      transform: scale(0.99);
+    }
+
+    .item-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: rgba(125, 125, 125, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .item-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .item-thumb svg {
+      width: 22px;
+      height: 22px;
+      color: var(--accent);
+    }
+
+    .item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .item-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .item-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .item-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .action-btn {
+      background: rgba(125, 125, 125, 0.12);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .action-btn:active {
+      background: var(--accent);
+      color: white;
+    }
+
+    /* Progress & Toast */
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(125, 125, 125, 0.2);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.2s ease;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #111827;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 24px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1000;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="status-dot"></div>
+        <div>
+          <div class="brand-title">StashIt</div>
+          <div class="brand-subtitle" id="connectionStatus">Подключено по Wi-Fi</div>
+        </div>
+      </div>
+      <div class="lang-switch">
+        <button class="lang-segment active" id="langRu" onclick="setLang('ru')">RU</button>
+        <button class="lang-segment" id="langEn" onclick="setLang('en')">EN</button>
+      </div>
+    </header>
+
+    <!-- Tabs Navigation -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tabUploadBtn" onclick="switchTab('upload')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span id="tabUploadText">На компьютер</span>
+      </button>
+      <button class="tab-btn" id="tabDownloadBtn" onclick="switchTab('download')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span id="tabDownloadText">С компьютера</span>
+        <span id="itemsBadge" style="display:none; background:var(--accent); color:white; font-size:11px; padding:1px 6px; border-radius:10px; margin-left:2px;">0</span>
+      </button>
+    </div>
+
+    <!-- Panel 1: Upload (Phone -> PC) -->
+    <div class="panel active" id="uploadPanel">
+      <!-- File upload card -->
+      <div class="card">
+        <div class="card-title">
+          <span id="uploadCardTitle">Отправить файлы на ПК</span>
+        </div>
+        
+        <input type="file" id="filePicker" multiple style="display: none" onchange="handleFilesSelected(this.files)">
+        <input type="file" id="cameraPicker" accept="image/*" capture="environment" style="display: none" onchange="handleFilesSelected(this.files)">
+
+        <div class="upload-zone" onclick="document.getElementById('filePicker').click()">
+          <div class="upload-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="upload-title" id="uploadZoneTitle">Выбрать файлы или фото</div>
+          <div class="upload-sub" id="uploadZoneSub">Файлы мгновенно появятся в кармане StashIt</div>
+        </div>
+
+        <div class="quick-actions">
+          <button class="btn-secondary" onclick="document.getElementById('cameraPicker').click()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span id="takePhotoText">Снимок камеры</span>
+          </button>
+          <button class="btn-secondary" onclick="document.getElementById('filePicker').click()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span id="chooseDocsText">Документы</span>
+          </button>
+        </div>
+
+        <div class="progress-bar-container" id="uploadProgressContainer">
+          <div class="progress-bar" id="uploadProgressBar"></div>
+        </div>
+      </div>
+
+      <!-- Text / URL send card -->
+      <div class="card">
+        <div class="card-title">
+          <span id="textCardTitle">Отправить текст или ссылку</span>
+        </div>
+        <textarea class="text-area" id="textInput" placeholder="Вставьте ссылку, текст или заметку..."></textarea>
+        <button class="btn-primary" id="sendTextBtn" onclick="sendText()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <span id="sendTextBtnText">Отправить на ПК</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Panel 2: Download (PC -> Phone) -->
+    <div class="panel" id="downloadPanel">
+      <div class="card">
+        <div class="card-title">
+          <span id="downloadCardTitle">Файлы на компьютере</span>
+          <button class="action-btn" onclick="fetchItems()" title="Обновить">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          </button>
+        </div>
+
+        <div class="items-list" id="itemsList">
+          <div class="empty-state" id="emptyStateText">В кармане на ПК пока нет файлов</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    <span id="toastMsg">Успешно</span>
+  </div>
+
+  <script>
+    // URL Params
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token') || '';
+
+    let currentLang = 'ru';
+    try {
+      currentLang = localStorage.getItem('stashit_lang') || 'ru';
+    } catch (e) {}
+    let cachedItems = [];
+
+    const i18n = {
+      ru: {
+        conn: 'Подключено по Wi-Fi',
+        tabUp: 'На компьютер',
+        tabDown: 'С компьютера',
+        upTitle: 'Отправить файлы на ПК',
+        upZone: 'Выбрать файлы или фото',
+        upSub: 'Файлы мгновенно появятся в кармане StashIt',
+        photo: 'Снимок камеры',
+        docs: 'Документы',
+        textTitle: 'Отправить текст или ссылку',
+        textPlaceholder: 'Вставьте ссылку, текст или заметку...',
+        sendText: 'Отправить на ПК',
+        downTitle: 'Файлы на компьютере',
+        empty: 'В кармане на ПК пока нет файлов',
+        uploadSuccess: 'Файлы отправлены на ПК! 🚀',
+        textSuccess: 'Текст отправлен на ПК! 📝',
+        copied: 'Скопировано в буфер',
+        save: 'Скачать',
+        share: 'Поделиться'
+      },
+      en: {
+        conn: 'Connected via Wi-Fi',
+        tabUp: 'To Computer',
+        tabDown: 'From Computer',
+        upTitle: 'Send files to PC',
+        upZone: 'Choose files or photos',
+        upSub: 'Files instantly appear in StashIt desktop shelf',
+        photo: 'Take photo',
+        docs: 'Documents',
+        textTitle: 'Send text or URL',
+        textPlaceholder: 'Paste URL, note or text...',
+        sendText: 'Send to PC',
+        downTitle: 'Files on Computer',
+        empty: 'No files on the desktop shelf yet',
+        uploadSuccess: 'Files sent to PC! 🚀',
+        textSuccess: 'Text sent to PC! 📝',
+        copied: 'Copied to clipboard',
+        save: 'Download',
+        share: 'Share'
+      }
+    };
+
+    function setText(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+
+    function setAttr(id, attr, val) {
+      const el = document.getElementById(id);
+      if (el) el[attr] = val;
+    }
+
+    function applyTranslations() {
+      const t = i18n[currentLang];
+      setText('connectionStatus', t.conn);
+      setText('tabUploadText', t.tabUp);
+      setText('tabDownloadText', t.tabDown);
+      setText('uploadCardTitle', t.upTitle);
+      setText('uploadZoneTitle', t.upZone);
+      setText('uploadZoneSub', t.upSub);
+      setText('takePhotoText', t.photo);
+      setText('chooseDocsText', t.docs);
+      setText('textCardTitle', t.textTitle);
+      setAttr('textInput', 'placeholder', t.textPlaceholder);
+      setText('sendTextBtnText', t.sendText);
+      setText('downloadCardTitle', t.downTitle);
+      setText('emptyStateText', t.empty);
+
+      const isRu = currentLang === 'ru';
+      const elRu = document.getElementById('langRu');
+      const elEn = document.getElementById('langEn');
+      if (elRu) elRu.classList.toggle('active', isRu);
+      if (elEn) elEn.classList.toggle('active', !isRu);
+    }
+
+    function setLang(lang) {
+      currentLang = lang;
+      try {
+        localStorage.setItem('stashit_lang', currentLang);
+      } catch (e) {}
+      applyTranslations();
+      renderItems(cachedItems);
+    }
+
+    function toggleLang() {
+      setLang(currentLang === 'ru' ? 'en' : 'ru');
+    }
+
+    function switchTab(tab) {
+      const isUp = tab === 'upload';
+      document.getElementById('tabUploadBtn').classList.toggle('active', isUp);
+      document.getElementById('tabDownloadBtn').classList.toggle('active', !isUp);
+      document.getElementById('uploadPanel').classList.toggle('active', isUp);
+      document.getElementById('downloadPanel').classList.toggle('active', !isUp);
+      if (!isUp) fetchItems();
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      toast.classList.add('show');
+      if (navigator.vibrate) navigator.vibrate(30);
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    // Upload Files
+    async function handleFilesSelected(files) {
+      if (!files || files.length === 0) return;
+
+      const progressContainer = document.getElementById('uploadProgressContainer');
+      const progressBar = document.getElementById('uploadProgressBar');
+      progressContainer.style.display = 'block';
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const percent = Math.round(((i) / files.length) * 100);
+        progressBar.style.width = percent + '%';
+
+        try {
+          const res = await fetch(`/api/upload?token=${encodeURIComponent(token)}&name=${encodeURIComponent(file.name)}`, {
+            method: 'POST',
+            body: file
+          });
+          if (!res.ok) throw new Error('Upload failed');
+        } catch (err) {
+          console.error('Upload error:', err);
+        }
+      }
+
+      progressBar.style.width = '100%';
+      setTimeout(() => {
+        progressContainer.style.display = 'none';
+        progressBar.style.width = '0%';
+      }, 600);
+
+      document.getElementById('filePicker').value = '';
+      document.getElementById('cameraPicker').value = '';
+      showToast(i18n[currentLang].uploadSuccess);
+      fetchItems();
+    }
+
+    // Send Text
+    async function sendText() {
+      const text = document.getElementById('textInput').value.trim();
+      if (!text) return;
+
+      const btn = document.getElementById('sendTextBtn');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`/api/upload-text?token=${encodeURIComponent(token)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        if (res.ok) {
+          document.getElementById('textInput').value = '';
+          showToast(i18n[currentLang].textSuccess);
+          fetchItems();
+        }
+      } catch (err) {
+        console.error('Error sending text:', err);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // Fetch and render items from PC
+    async function fetchItems() {
+      try {
+        const res = await fetch(`/api/items?token=${encodeURIComponent(token)}`);
+        if (!res.ok) return;
+        const items = await res.json();
+        cachedItems = items;
+        renderItems(items);
+
+        const badge = document.getElementById('itemsBadge');
+        if (items.length > 0) {
+          badge.style.display = 'inline-block';
+          badge.textContent = items.length;
+        } else {
+          badge.style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Error fetching items:', err);
+      }
+    }
+
+    function renderItems(items) {
+      const list = document.getElementById('itemsList');
+      if (!items || items.length === 0) {
+        list.innerHTML = `<div class="empty-state">${i18n[currentLang].empty}</div>`;
+        return;
+      }
+
+      list.innerHTML = '';
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'item-card';
+
+        // Thumb
+        let thumbContent = '';
+        if (item.kind === 'image') {
+          thumbContent = `<img src="/api/thumb/${encodeURIComponent(item.id)}?token=${encodeURIComponent(token)}" loading="lazy" alt="" onerror="this.parentElement.innerHTML = getFileIconSvg();">`;
+        } else if (item.kind === 'text') {
+          thumbContent = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
+        } else if (item.kind === 'url') {
+          thumbContent = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`;
+        } else {
+          thumbContent = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`;
+        }
+
+        const downloadUrl = `/api/download/${encodeURIComponent(item.id)}?token=${encodeURIComponent(token)}`;
+
+        card.innerHTML = `
+          <div class="item-thumb">${thumbContent}</div>
+          <div class="item-info">
+            <div class="item-name">${escapeHtml(item.name)}</div>
+            <div class="item-meta">${escapeHtml(item.formatted_size || '')}</div>
+          </div>
+          <div class="item-actions">
+            ${item.kind === 'text' || item.kind === 'url' ? `
+              <button class="action-btn" title="Копировать" onclick="copyText('${escapeAttr(item.text_preview || item.name)}')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+            ` : `
+              <button class="action-btn" title="${i18n[currentLang].save}" onclick="downloadItem('${downloadUrl}', '${escapeAttr(item.name)}')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </button>
+              ${navigator.share ? `
+                <button class="action-btn" title="${i18n[currentLang].share}" onclick="shareItem('${escapeAttr(item.name)}', '${downloadUrl}')">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                </button>
+              ` : ''}
+            `}
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function getFileIconSvg() {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>';
+    }
+
+    function escapeHtml(s) {
+      return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function escapeAttr(s) {
+      return (s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function copyText(str) {
+      navigator.clipboard.writeText(str).then(() => {
+        showToast(i18n[currentLang].copied);
+      });
+    }
+
+    async function downloadItem(url, name) {
+      try {
+        showToast(currentLang === 'ru' ? 'Скачивание...' : 'Downloading...');
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Download failed');
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+        showToast(currentLang === 'ru' ? 'Файл скачан! 📥' : 'File downloaded! 📥');
+      } catch (e) {
+        window.location.href = url;
+      }
+    }
+
+    async function shareItem(name, url) {
+      try {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const file = new File([blob], name, { type: blob.type || 'application/octet-stream' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: name
+          });
+          return;
+        }
+      } catch (e) {}
+
+      try {
+        const fullUrl = window.location.origin + url;
+        if (navigator.share) {
+          await navigator.share({
+            title: name,
+            url: fullUrl
+          });
+        }
+      } catch (e) {
+        console.log('Share dismissed or failed', e);
+      }
+    }
+
+    // Polling updates from PC
+    setInterval(() => {
+      fetchItems();
+    }, 3500);
+
+    // Initial load
+    applyTranslations();
+    fetchItems();
+  </script>
+</body>
+</html>

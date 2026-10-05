@@ -53,6 +53,25 @@ class _LandingPageState extends State<LandingPage> {
   final GlobalKey _comparisonKey = GlobalKey();
   final GlobalKey _faqKey = GlobalKey();
   final GlobalKey _downloadKey = GlobalKey();
+  String? _releaseVersion = 'v1.3.0';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLatestVersion();
+  }
+
+  Future<void> _loadLatestVersion() async {
+    final cached = KobaltReleaseService.getCached(KobaltProjectId.stashIt);
+    if (cached != null && cached.tagName.isNotEmpty) {
+      if (mounted) setState(() => _releaseVersion = cached.tagName);
+      return;
+    }
+    final rel = await KobaltReleaseService.fetchLatestRelease(KobaltProjectId.stashIt);
+    if (mounted && rel != null && rel.tagName.isNotEmpty) {
+      setState(() => _releaseVersion = rel.tagName);
+    }
+  }
 
   void _scrollTo(GlobalKey key) {
     final ctx = key.currentContext;
@@ -105,7 +124,7 @@ class _LandingPageState extends State<LandingPage> {
                 children: [
                   KobaltNavBar(
                     project: KobaltProjectId.stashIt,
-                    version: 'v1.0.1',
+                    version: _releaseVersion,
                     isRussian: currentLang.value == AppLang.ru,
                     onLanguageToggle: toggleLanguage,
                     isDark: isDark,
@@ -139,7 +158,7 @@ class _LandingPageState extends State<LandingPage> {
                           DownloadCta(key: _downloadKey),
                           KobaltFooter(
                             project: KobaltProjectId.stashIt,
-                            version: 'v1.0.1',
+                            version: _releaseVersion,
                             isRussian: currentLang.value == AppLang.ru,
                             accentColor: AppColors.accent,
                             onBackToTop: () {

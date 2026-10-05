@@ -18,7 +18,7 @@ export const translations = {
 
     // About & Updates
     aboutTagline: 'Легковесный плавающий карман для Windows',
-    versionBadge: 'v1.2.1',
+    versionBadge: 'v1.3.0',
     checkingUpdates: 'Проверка...',
     updateAvailable: 'Доступно обновление',
     updateLatest: 'У вас актуальная версия',
@@ -84,6 +84,18 @@ export const translations = {
     clearCountdownButton: (s: number) => `Очистить (${s}с)`,
     clearButtonTooltip: 'Очистить весь карман',
     clearCountdownTooltip: 'Нажмите, чтобы отменить автоочистку или очистить сейчас',
+
+    // Local Drop (Wi-Fi QR)
+    mobileDropTooltip: 'Обмен с телефоном по Wi-Fi (QR-код)',
+    mobileDropTitle: 'Обмен с телефоном',
+    mobileDropSubtitle: 'Отсканируйте камерой смартфона (в одной Wi-Fi сети)',
+    mobileDropOpenBrowser: 'Открыть в браузере',
+    mobileDropCopyLink: 'Скопировать ссылку',
+    mobileDropLinkCopied: 'Ссылка скопирована',
+    mobileDropStop: 'Завершить обмен',
+    mobileDropStarting: 'Запуск локального сервера...',
+    mobileDropStatusWaiting: 'Ожидание подключения...',
+    mobileDropAutoStopHint: 'Сервер отключится автоматически при закрытии окна',
   },
   en: {
     // Header & Tooltips
@@ -102,7 +114,7 @@ export const translations = {
 
     // About & Updates
     aboutTagline: 'Lightweight floating file shelf for Windows',
-    versionBadge: 'v1.2.1',
+    versionBadge: 'v1.3.0',
     checkingUpdates: 'Checking...',
     updateAvailable: 'Update available',
     updateLatest: 'You have the latest version',
@@ -168,5 +180,17 @@ export const translations = {
     clearCountdownButton: (s: number) => `Clear (${s}s)`,
     clearButtonTooltip: 'Clear entire shelf',
     clearCountdownTooltip: 'Click to cancel auto-clear or clear right now',
+
+    // Local Drop (Wi-Fi QR)
+    mobileDropTooltip: 'Share with phone over Wi-Fi (QR Code)',
+    mobileDropTitle: 'Phone Local Drop',
+    mobileDropSubtitle: 'Scan with smartphone camera (on the same Wi-Fi)',
+    mobileDropOpenBrowser: 'Open in browser',
+    mobileDropCopyLink: 'Copy Link',
+    mobileDropLinkCopied: 'Link copied',
+    mobileDropStop: 'Stop Session',
+    mobileDropStarting: 'Starting local server...',
+    mobileDropStatusWaiting: 'Waiting for connection...',
+    mobileDropAutoStopHint: 'Server stops automatically when inactive or closed',
   }
 };

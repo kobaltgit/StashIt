@@ -95,6 +95,14 @@ class ComparisonTable extends StatelessWidget {
                   ),
                   TableRow(
                     children: [
+                      _cell(Strings.get('Обмен с телефоном', 'Phone Drop (Wi-Fi)')),
+                      _cell(Strings.get('Да (Wi-Fi QR, без облаков)', 'Yes (Wi-Fi QR, zero-cloud)'), color: AppColors.isDark ? Colors.greenAccent : const Color(0xFF059669)),
+                      _cell(Strings.get('Через iCloud / AirDrop', 'Via iCloud / AirDrop')),
+                      _cell(Strings.get('Нет / через облака', 'No / external clouds')),
+                    ],
+                  ),
+                  TableRow(
+                    children: [
                       _cell(Strings.get('Стек ядра', 'Core Stack')),
                       _cell('Rust 2021 + Tauri v2 + Svelte 5', color: AppColors.isDark ? Colors.greenAccent : const Color(0xFF059669)),
                       _cell('Swift / Cocoa'),

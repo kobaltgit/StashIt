@@ -1,5 +1,28 @@
 # 📝 История версий StashIt (Release Notes)
 
+## [1.3.0] - 2026-10-05
+### 🇷🇺 Что нового:
+- **Двусторонний беспроводной обмен с телефоном по Wi-Fi (Local Drop / Phone Drop)**:
+  - **Мгновенное сопряжение по QR-коду**: кнопка со значком телефона в шапке кармана открывает экран сопряжения. Никаких сторонних серверов, облаков, регистрации или внешних утилит — только локальная сеть Wi-Fi.
+  - **Передача со смартфона на ПК**: отправка фотографий из галереи, съёмка на камеру напрямую в карман, передача любых документов и файлов, а также отправка текстовых заметок и ссылок. Все отправленные элементы сразу появляются в кармане StashIt на ПК.
+  - **Скачивание и шеринг с ПК на смартфон**: все файлы из кармана доступны на экране телефона с миниатюрами; поддержка прямого скачивания файлов и нативного системного меню «Поделиться» (Web Share API).
+  - **Автономный микросервер на Rust (On-Demand)**: встроенный легковесный HTTP-сервер поднимается исключительно при открытии экрана QR-кода и автоматически останавливается при закрытии кармана (0% CPU в фоне, строгое сохранение лимита <25 МБ RAM).
+  - **Безопасность и изоляция**: каждый запуск генерирует уникальный одноразовый токен безопасности; запросы без действующего токена отклоняются.
+  - **Адаптивный мобильный интерфейс**: современная тёмная тема в стиле Fluent, сегментированный переключатель языка `[RU][EN]` с сохранением выбора и полная автономность без внешних скриптов.
+
+---
+
+### 🇬🇧 What's New:
+- **Two-Way Wi-Fi Local Drop via QR Code (Phone Drop)**:
+  - **Instant QR Pairing**: tap the phone icon in the shelf header to open the pairing screen. Zero cloud dependencies, zero external accounts or server setup — works entirely within your local Wi-Fi.
+  - **Phone to PC Upload**: upload photos from gallery, capture live camera shots directly into the shelf, transfer documents, and send text notes or URLs. All received items appear in the desktop shelf instantly.
+  - **PC to Phone Download**: browse desktop shelf items on your smartphone with image previews; download files directly or share them via the native mobile share sheet (Web Share API).
+  - **On-Demand Rust Micro-Server**: lightweight embedded HTTP server spins up only while the QR screen is active and stops automatically when the shelf is closed (0% CPU idle, preserving strict <25 MB RAM ceiling).
+  - **Session Token Security**: random one-time security token generated per launch prevents unauthorized local network access.
+  - **Responsive Mobile Web UI**: sleek dark Fluent-inspired mobile web app, segmented `[RU][EN]` language switch with persistent preference, and zero external CDN dependencies.
+
+---
+
 ## [1.2.1] - 2026-10-05
 ### 🇷🇺 Что нового:
 - **Полная поддержка мультимониторных конфигураций (Multi-Monitor Support)**:

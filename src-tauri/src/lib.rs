@@ -4,6 +4,7 @@ mod drop_target;
 #[cfg(windows)]
 mod text_drag;
 mod hook;
+pub mod local_drop;
 mod models;
 pub mod updater;
 
@@ -482,6 +483,7 @@ fn copy_to_clipboard(paths: Vec<String>, text: Option<String>) -> Result<(), Str
 pub fn run() {
     tauri::Builder::default()
         .manage(AppState::default())
+        .manage(local_drop::LocalDropManager::default())
         .invoke_handler(tauri::generate_handler![
             get_stash_items,
             add_stash_item_paths,
@@ -502,7 +504,9 @@ pub fn run() {
             init_drop_target,
             exit_app,
             check_for_updates,
-            open_external_url
+            open_external_url,
+            local_drop::start_local_drop,
+            local_drop::stop_local_drop
         ])
         .setup(|app| {
             let show_i = MenuItem::with_id(app, "show", "Показать StashIt", true, None::<&str>)?;

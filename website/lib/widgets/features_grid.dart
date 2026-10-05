@@ -51,6 +51,13 @@ class FeaturesGrid extends StatelessWidget {
         'descEn': 'Startup via HKCU registry without annoying administrator UAC permission prompts.',
       },
       {
+        'icon': Icons.qr_code_scanner,
+        'titleRu': 'Обмен со смартфоном по Wi-Fi',
+        'titleEn': 'Two-Way Phone Drop (Wi-Fi QR)',
+        'descRu': 'Сканируйте QR-код камерой телефона: передавайте фото и файлы с телефона прямо в карман на ПК и скачивайте файлы обратно без проводов и облаков.',
+        'descEn': 'Scan the QR code with your phone camera: upload photos and files directly into your desktop shelf and download back with zero cables or cloud.',
+      },
+      {
         'icon': Icons.system_update_alt,
         'titleRu': 'Тихие обновления и Раздел «О программе»',
         'titleEn': 'Silent Updates & About Section',

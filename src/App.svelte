@@ -43,6 +43,13 @@
     published_at: string;
   }
 
+  interface LocalDropInfo {
+    url: string;
+    qr_svg: string;
+    port: number;
+    token: string;
+  }
+
   // --- Svelte 5 Runes ($state) ---
   let items = $state<StashItem[]>([]);
   let isDragOver = $state(false);
@@ -50,6 +57,10 @@
   let effectiveTheme = $state<"dark" | "light">("dark");
   let lang = $state<Lang>("ru");
   let showSettings = $state(false);
+  let showMobileDrop = $state(false);
+  let mobileDropLoading = $state(false);
+  let mobileDropInfo = $state<LocalDropInfo | null>(null);
+  let mobileDropCopied = $state(false);
   let activeSettingsTab = $state<"triggers" | "about">("triggers");
   let shakeEnabled = $state<boolean>(true);
   let hotkeyEnabled = $state<boolean>(true);
@@ -283,6 +294,51 @@
       await invoke("exit_app");
     } catch (e) {
       console.error("Ошибка закрытия StashIt:", e);
+    }
+  }
+
+  // --- Управление сессией Local Drop (Wi-Fi QR) ---
+  async function openMobileDrop() {
+    showSettings = false;
+    showMobileDrop = true;
+    mobileDropLoading = true;
+    try {
+      mobileDropInfo = await invoke<LocalDropInfo>("start_local_drop");
+    } catch (err) {
+      console.error("Ошибка запуска Local Drop:", err);
+      showNotice(String(err));
+    } finally {
+      mobileDropLoading = false;
+    }
+  }
+
+  async function closeMobileDrop() {
+    showMobileDrop = false;
+    mobileDropInfo = null;
+    try {
+      await invoke("stop_local_drop");
+    } catch (err) {
+      console.error("Ошибка остановки Local Drop:", err);
+    }
+  }
+
+  function toggleMobileDrop() {
+    if (showMobileDrop) {
+      closeMobileDrop();
+    } else {
+      openMobileDrop();
+    }
+  }
+
+  async function copyMobileDropUrl() {
+    if (!mobileDropInfo) return;
+    try {
+      await navigator.clipboard.writeText(mobileDropInfo.url);
+      mobileDropCopied = true;
+      showNotice(t.mobileDropLinkCopied);
+      setTimeout(() => (mobileDropCopied = false), 2000);
+    } catch (err) {
+      console.error("Ошибка копирования ссылки:", err);
     }
   }
 
@@ -567,10 +623,12 @@
       updateResult = event.payload;
     });
 
-    // Хоткей Escape для закрытия настроек или скрытия кармана, Ctrl+A для выделения всех
+    // Хоткей Escape для закрытия настроек, Local Drop или скрытия кармана, Ctrl+A для выделения всех
     const keyHandler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (showSettings) {
+        if (showMobileDrop) {
+          closeMobileDrop();
+        } else if (showSettings) {
           showSettings = false;
         } else {
           hideShelf();
@@ -756,12 +814,42 @@
         <span class="lang-text">{lang.toUpperCase()}</span>
       </button>
 
+      <!-- Обмен по QR-коду (Wi-Fi) -->
+      <button 
+        class="icon-btn qr-btn" 
+        title={t.mobileDropTooltip}
+        class:active={showMobileDrop}
+        onclick={() => {
+          if (showMobileDrop) {
+            closeMobileDrop();
+          } else {
+            showSettings = false;
+            openMobileDrop();
+          }
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="14" width="3" height="3"/>
+          <rect x="18" y="14" width="3" height="3"/>
+          <rect x="14" y="18" width="3" height="3"/>
+          <rect x="18" y="18" width="3" height="3"/>
+        </svg>
+      </button>
+
       <!-- Настройки -->
       <button 
         class="icon-btn" 
         title={t.settingsTooltip}
         class:active={showSettings}
-        onclick={() => (showSettings = !showSettings)}
+        onclick={() => {
+          showSettings = !showSettings;
+          if (showSettings) {
+            closeMobileDrop();
+          }
+        }}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
@@ -785,8 +873,76 @@
     </div>
   {/if}
 
-  <!-- Панель настроек (с вкладками «Управление» и «О программе») -->
-  {#if showSettings}
+  <!-- Экран 1: Wi-Fi Local Drop (QR-код на всё окно) -->
+  {#if showMobileDrop}
+    <div class="mobile-drop-panel">
+      <div class="mobile-drop-header">
+        <div class="mobile-drop-title-wrap">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+            <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+            <rect x="14" y="14" width="3" height="3"/>
+            <rect x="18" y="14" width="3" height="3"/>
+            <rect x="14" y="18" width="3" height="3"/>
+            <rect x="18" y="18" width="3" height="3"/>
+          </svg>
+          <span class="mobile-drop-title">{t.mobileDropTitle}</span>
+        </div>
+        <button class="icon-btn sm" onclick={closeMobileDrop} title={t.closeTooltip}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="mobile-drop-subtitle">{t.mobileDropSubtitle}</div>
+
+      {#if mobileDropLoading}
+        <div class="mobile-drop-loading">
+          <div class="spinner"></div>
+          <span>{t.mobileDropStarting}</span>
+        </div>
+      {:else if mobileDropInfo}
+        <div class="qr-container">
+          <div class="qr-code-box">
+            {@html mobileDropInfo.qr_svg}
+          </div>
+        </div>
+
+        <div class="mobile-url-box" title={mobileDropInfo.url}>
+          <span class="url-text">{mobileDropInfo.url}</span>
+          <button class="url-copy-btn" onclick={copyMobileDropUrl} title={t.mobileDropCopyLink}>
+            {#if mobileDropCopied}
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            {:else}
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            {/if}
+          </button>
+        </div>
+
+        <div class="mobile-status-row">
+          <div class="status-indicator">
+            <span class="dot live"></span>
+            <span>{t.mobileDropStatusWaiting}</span>
+          </div>
+        </div>
+
+        <div class="mobile-drop-actions">
+          <button class="btn-subtle" onclick={() => handleOpenUrl(mobileDropInfo?.url)}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            <span>{t.mobileDropOpenBrowser}</span>
+          </button>
+          <button class="btn-subtle danger" onclick={closeMobileDrop}>
+            <span>{t.mobileDropStop}</span>
+          </button>
+        </div>
+
+        <div class="mobile-drop-hint">
+          {t.mobileDropAutoStopHint}
+        </div>
+      {/if}
+    </div>
+  {:else if showSettings}
+    <!-- Экран 2: Панель настроек (с вкладками «Управление» и «О программе») -->
     <div class="settings-panel">
       <!-- Навигация по вкладкам -->
       <div class="settings-tabs">
@@ -1376,6 +1532,184 @@
   .settings-panel::-webkit-scrollbar-thumb {
     background: var(--border-color);
     border-radius: 4px;
+  }
+
+  /* Wi-Fi Local Drop Panel */
+  .mobile-drop-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 10px 12px 8px;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    animation: fadeIn 0.15s ease-out;
+    flex: 1;
+    overflow: hidden;
+    user-select: text;
+    box-sizing: border-box;
+  }
+
+  .mobile-drop-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2px;
+  }
+
+  .mobile-drop-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  .mobile-drop-subtitle {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.25;
+    text-align: center;
+  }
+
+  .mobile-drop-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 60px 0;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .qr-container {
+    display: flex;
+    justify-content: center;
+    margin: 4px 0;
+  }
+
+  .qr-code-box {
+    background: #ffffff;
+    padding: 6px;
+    border-radius: 10px;
+    width: 130px;
+    height: 130px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .qr-code-box :global(svg) {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .mobile-url-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0, 0, 0, 0.18);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 3px 8px;
+    gap: 6px;
+  }
+
+  .url-text {
+    font-family: monospace;
+    font-size: 10.5px;
+    color: var(--accent);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    user-select: all;
+  }
+
+  .url-copy-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .url-copy-btn:hover {
+    color: var(--text-main);
+    background: var(--card-hover);
+  }
+
+  .mobile-status-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .dot.live {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+  }
+
+  .mobile-drop-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .btn-subtle {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-main);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-subtle:hover {
+    background: var(--card-hover);
+    border-color: var(--accent);
+  }
+
+  .btn-subtle.danger:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #ef4444;
+  }
+
+  .mobile-drop-hint {
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-muted);
+    opacity: 0.8;
   }
 
   /* Табы */

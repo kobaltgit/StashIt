@@ -68,6 +68,160 @@ class _HeroSectionState extends State<HeroSection> {
     });
   }
 
+  void _showPhoneDropDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final isDark = siteThemeMode.value == ThemeMode.dark;
+        return Dialog(
+          backgroundColor: isDark ? const Color(0xFF141A29) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: AppColors.borderSubtle),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 380),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.accent.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.phonelink_ring, color: AppColors.accent, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              Strings.get('Обмен с телефоном', 'Phone Local Drop'),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              Strings.get('Wi-Fi сопряжение без облаков', 'Zero-cloud Wi-Fi pairing'),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        color: AppColors.textSecondary,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    width: 150,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0x330078D6), width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.accent.withValues(alpha: 0.15),
+                          blurRadius: 16,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.qr_code_2, size: 110, color: Color(0xFF0F172A)),
+                          Text(
+                            'Scan with Phone',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0x22FFFFFF) : const Color(0x0A000000),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.borderSubtle),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.wifi, size: 14, color: AppColors.accent),
+                        const SizedBox(width: 6),
+                        Text(
+                          'http://192.168.1.45:49152/?token=...',
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    Strings.get(
+                      'Отсканируйте код камерой смартфона в одной сети Wi-Fi: передавайте фото, файлы и заметки в карман на ПК и скачивайте файлы обратно в один клик.',
+                      'Scan the code with your smartphone camera on the same Wi-Fi: upload photos, camera shots, and notes straight to PC shelf or download files back.',
+                    ),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: Text(
+                        Strings.get('Понятно', 'Got it'),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDark = _isDarkTheme;
@@ -135,8 +289,8 @@ class _HeroSectionState extends State<HeroSection> {
             constraints: const BoxConstraints(maxWidth: 720),
             child: Text(
               Strings.get(
-                'Умный временный карман (Drag & Drop Shelf) для Windows 10 & 11 в стиле macOS Dropover. Появляется по встряске мыши или при начале перетаскивания. Никакого лишнего мусора на экране в покое.',
-                'Smart temporary shelf for Windows 10 & 11 inspired by macOS Dropover. Appears via mouse shake or as soon as you drag. Zero clutter on your desktop when idle.',
+                'Умный временный карман (Drag & Drop Shelf) для Windows 10 & 11 в стиле macOS Dropover. Появляется по встряске мыши, хоткею или у края экрана. Включает двусторонний обмен с телефоном по Wi-Fi (QR-код). 100% скрыт в покое.',
+                'Smart temporary shelf for Windows 10 & 11 inspired by macOS Dropover. Summon via mouse shake, hotkey, or screen edge. Includes two-way Wi-Fi Phone Drop via QR code. 100% hidden when idle.',
               ),
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 18, color: AppColors.textSecondary, height: 1.5),
@@ -359,6 +513,14 @@ class _HeroSectionState extends State<HeroSection> {
                               constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
                               tooltip: Strings.get('Выбрать все', 'Select all'),
                               onPressed: _toggleSelectAll,
+                            ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              icon: Icon(Icons.phonelink_ring, size: 16, color: textSecondaryColor),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                              tooltip: Strings.get('Обмен с телефоном (QR-код)', 'Share with phone (QR Code)'),
+                              onPressed: _showPhoneDropDialog,
                             ),
                           ],
                         ),
