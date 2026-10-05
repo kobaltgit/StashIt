@@ -130,16 +130,19 @@ class _FeatureCardState extends State<_FeatureCard> {
     final screenWidth = MediaQuery.of(context).size.width;
     final cardWidth = screenWidth < 360 ? screenWidth - 48 : 320.0;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        transform: Matrix4.translationValues(0, _isHovered ? -4 : 0, 0),
-        width: cardWidth,
-        height: 240,
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
+    return SizedBox(
+      width: cardWidth,
+      height: 240,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.translationValues(0, _isHovered ? -4 : 0, 0),
+          width: cardWidth,
+          height: 240,
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
         decoration: BoxDecoration(
           color: _isHovered ? AppColors.surfaceCardHover : AppColors.surfaceCard,
           borderRadius: BorderRadius.circular(14),
@@ -206,6 +209,7 @@ class _FeatureCardState extends State<_FeatureCard> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
