@@ -61,6 +61,13 @@ fn clear_stash(state: State<'_, AppState>) -> Vec<StashItem> {
 }
 
 #[tauri::command]
+fn set_stash_items(new_items: Vec<StashItem>, state: State<'_, AppState>) -> Vec<StashItem> {
+    let mut items = state.items.lock().unwrap();
+    *items = new_items;
+    items.clone()
+}
+
+#[tauri::command]
 fn hide_shelf(app: AppHandle) -> Result<(), String> {
     if let Some(win) = app.get_webview_window("main") {
         win.hide().map_err(|e| e.to_string())?;
@@ -126,6 +133,8 @@ pub struct AppConfig {
     pub last_update_check_time: u64,
     #[serde(default)]
     pub last_notified_version: String,
+    #[serde(default)]
+    pub pinned_shelves: Vec<models::ShelfConfig>,
 }
 
 fn default_true() -> bool {
@@ -147,6 +156,7 @@ impl Default for AppConfig {
             auto_check_updates: true,
             last_update_check_time: 0,
             last_notified_version: String::new(),
+            pinned_shelves: Vec::new(),
         }
     }
 }
@@ -194,6 +204,18 @@ fn save_app_config(config: AppConfig) -> Result<(), String> {
         config.double_tap_key,
         config.edge_dock,
     );
+    save_config(&config)
+}
+
+#[tauri::command]
+fn get_pinned_shelves() -> Vec<models::ShelfConfig> {
+    load_config().pinned_shelves
+}
+
+#[tauri::command]
+fn save_pinned_shelves(shelves: Vec<models::ShelfConfig>) -> Result<(), String> {
+    let mut config = load_config();
+    config.pinned_shelves = shelves;
     save_config(&config)
 }
 
@@ -505,6 +527,9 @@ pub fn run() {
             exit_app,
             check_for_updates,
             open_external_url,
+            set_stash_items,
+            get_pinned_shelves,
+            save_pinned_shelves,
             local_drop::start_local_drop,
             local_drop::stop_local_drop
         ])
@@ -626,4 +651,89 @@ pub fn run() {
                 }
             }
         });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sanitize_filename() {
+        assert_eq!(sanitize_filename("valid_name.txt"), "valid_name.txt");
+        assert_eq!(sanitize_filename("illegal/path\\to:file*?.txt"), "illegal_path_to_file__.txt");
+        assert_eq!(sanitize_filename("..."), "stashit_note");
+        assert_eq!(sanitize_filename("   "), "stashit_note");
+        assert_eq!(sanitize_filename("Long text with tabs\tand\nnewlines"), "Long text with tabs_and_newlines");
+    }
+
+    #[test]
+    fn test_app_config_default() {
+        let cfg = AppConfig::default();
+        assert!(cfg.shake);
+        assert!(cfg.hotkey);
+        assert_eq!(cfg.hotkey_combo, 0);
+        assert!(cfg.double_tap);
+        assert_eq!(cfg.double_tap_key, 0);
+        assert!(!cfg.edge_dock);
+        assert_eq!(cfg.theme, "system");
+        assert_eq!(cfg.lang, "ru");
+        assert!(cfg.auto_clear);
+        assert!(cfg.auto_check_updates);
+    }
+
+    #[test]
+    fn test_app_config_serde_json() {
+        let mut cfg = AppConfig::default();
+        cfg.pinned_shelves.push(models::ShelfConfig {
+            id: "my_shelf".into(),
+            name: "Макеты".into(),
+            pinned: true,
+        });
+        let json = serde_json::to_string(&cfg).expect("Should serialize");
+        let deserialized: AppConfig = serde_json::from_str(&json).expect("Should deserialize");
+        assert_eq!(deserialized.theme, "system");
+        assert_eq!(deserialized.auto_clear, true);
+        assert_eq!(deserialized.pinned_shelves.len(), 1);
+        assert_eq!(deserialized.pinned_shelves[0].name, "Макеты");
+    }
+
+    #[test]
+    fn test_app_state_operations() {
+        let state = AppState::default();
+
+        {
+            let mut items = state.items.lock().unwrap();
+            assert!(items.is_empty());
+            items.push(StashItem::from_text("First item"));
+            items.push(StashItem::from_text("Second item"));
+            assert_eq!(items.len(), 2);
+
+            let id_to_remove = items[0].id.clone();
+            items.retain(|it| it.id != id_to_remove);
+            assert_eq!(items.len(), 1);
+            assert_eq!(items[0].name, "Second item");
+
+            items.clear();
+            assert!(items.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_set_stash_items_replacement() {
+        let state = AppState::default();
+        let new_list = vec![
+            StashItem::from_text("Replaced item 1"),
+            StashItem::from_text("Replaced item 2"),
+        ];
+
+        {
+            let mut items = state.items.lock().unwrap();
+            *items = new_list.clone();
+        }
+
+        let items = state.items.lock().unwrap();
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0].name, "Replaced item 1");
+        assert_eq!(items[1].name, "Replaced item 2");
+    }
 }

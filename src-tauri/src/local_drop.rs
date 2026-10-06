@@ -522,3 +522,46 @@ fn percent_encode(input: &str) -> String {
     }
     out
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_token() {
+        let t1 = generate_token();
+        let t2 = generate_token();
+        assert!(!t1.is_empty());
+        assert!(!t2.is_empty());
+        // Tokens should be hex strings
+        assert!(t1.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn test_mime_by_ext() {
+        assert_eq!(mime_by_ext("png"), "image/png");
+        assert_eq!(mime_by_ext("jpg"), "image/jpeg");
+        assert_eq!(mime_by_ext("jpeg"), "image/jpeg");
+        assert_eq!(mime_by_ext("gif"), "image/gif");
+        assert_eq!(mime_by_ext("webp"), "image/webp");
+        assert_eq!(mime_by_ext("svg"), "image/svg+xml");
+        assert_eq!(mime_by_ext("pdf"), "application/pdf");
+        assert_eq!(mime_by_ext("zip"), "application/zip");
+        assert_eq!(mime_by_ext("unknown_ext_xyz"), "application/octet-stream");
+    }
+
+    #[test]
+    fn test_percent_encode_decode() {
+        let original = "Привет мир test.txt";
+        let encoded = percent_encode(original);
+        assert!(!encoded.contains(' '));
+        let decoded = percent_decode(&encoded).expect("Should decode successfully");
+        assert_eq!(decoded, original);
+    }
+
+    #[test]
+    fn test_percent_decode_plus() {
+        let decoded = percent_decode("hello+world").unwrap();
+        assert_eq!(decoded, "hello world");
+    }
+}

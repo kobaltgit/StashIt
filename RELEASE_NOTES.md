@@ -1,5 +1,48 @@
 # 📝 История версий StashIt (Release Notes)
 
+## [1.4.0] - 2026-10-06
+### 🇷🇺 Что нового:
+- **Мульти-полки и вкладки (Multi-Stash Tabs)**:
+  - **Многопоточная организация файлов**: теперь можно создавать несколько независимых полок для разных задач, проектов или очередей файлов.
+  - **Быстрое создание с клавишей Shift**: перетащите файлы и отпустите их с зажатой клавишей `Shift` — приложение автоматически создаст новую полку и поместит файлы в неё. Компактный плавающий бейдж подсказки подскажет эту возможность при драге.
+  - **Постоянные (закреплённые) и временные полки**:
+    - Любую полку можно закрепить (Pin 📌) — она не закроется автоматически при очистке и сохранится между перезапусками приложения.
+    - Временные полки аккуратно самоликвидируются при выгрузке последнего файла.
+  - **Эргономичная навигация и горячие клавиши**:
+    - Кнопка создания новой полки `[+]` жёстко зафиксирована справа и всегда под рукой.
+    - Быстрое переключение полок кликом мыши, колёсиком над панелью вкладок или шорткатами `Ctrl + 1..9` и `Ctrl + Tab`.
+    - Создание новой полки: `Ctrl + T`, закрытие активной полки: `Ctrl + W`, переименование: `F2` или двойной клик.
+    - Контекстное меню по правому клику (ПКМ): переименование, закрепление/открепление и закрытие полки.
+  - **Spring-Loaded Tabs при перетаскивании**:
+    - При перетаскивании файлов из Проводника Windows задержка над неактивной вкладкой на 300 мс автоматически открывает её.
+    - Прямой сброс файла на шапку неактивной вкладки отправляет файл напрямую в эту полку.
+    - Сброс на кнопку `[+]` сразу создаёт новую полку с этими файлами.
+- **Комплексное автоматическое тестирование**:
+  - 41 автоматический юнит-тест во всех слоях проекта: Rust бэкенд (`cargo test`), Svelte 5 фронтенд (`vitest`) и сайт-презентация Flutter Web (`flutter test`).
+
+---
+
+### 🇬🇧 What's New:
+- **Multi-Shelf Tabs (Multi-Stash)**:
+  - **Multi-lane file organization**: organize files across multiple independent shelves for different tasks, projects, or batches.
+  - **Instant Creation with Shift Key**: drag files and drop them while holding `Shift` — a new shelf is instantly created with those files. A sleek, centered pill badge prompts this shortcut during drag operations.
+  - **Pinned vs. Temporary Shelves**:
+    - Pin 📌 favorite shelves so they persist even when empty and survive app restarts.
+    - Temporary shelves automatically close when their last item is dragged out.
+  - **Ergonomic Tab Navigation & Shortcuts**:
+    - The new shelf `[+]` button is securely pinned on the right and always accessible.
+    - Switch shelves effortlessly via tab clicks, mouse wheel scrolling over tabs, or `Ctrl + 1..9` and `Ctrl + Tab`.
+    - New shelf: `Ctrl + T`, close shelf: `Ctrl + W`, inline rename: `F2` or double-click.
+    - Right-click context menu: rename, pin/unpin, and close.
+  - **Spring-Loaded Tabs during Drag & Drop**:
+    - Hovering over an inactive tab for 300 ms while dragging files from Windows Explorer automatically switches to that shelf.
+    - Dropping files directly onto an inactive tab header adds items to that specific shelf.
+    - Dropping onto the `[+]` button immediately creates a new shelf with the dropped files.
+- **Automated Test Suite**:
+  - 41 automated unit tests across the stack: Rust backend (`cargo test`), Svelte 5 frontend (`vitest`), and Flutter Web presentation site (`flutter test`).
+
+---
+
 ## [1.3.1] - 2026-10-06
 ### 🇷🇺 Что нового:
 - **Упрощение управления окном и скрытия в трей**:

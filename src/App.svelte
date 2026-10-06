@@ -16,6 +16,17 @@
   }
 
   import { translations, type Lang } from "./i18n";
+  import { formatBytes } from "./utils";
+  import {
+    type Shelf,
+    type ShelfConfig,
+    createDefaultShelf,
+    createNewShelf,
+    canCloseShelf,
+    getTotalItemsCount,
+    serializePinnedShelves,
+    restoreShelvesFromConfig,
+  } from "./shelves";
 
   type ThemeMode = "system" | "dark" | "light";
 
@@ -51,7 +62,17 @@
   }
 
   // --- Svelte 5 Runes ($state) ---
-  let items = $state<StashItem[]>([]);
+  let shelves = $state<Shelf[]>([createDefaultShelf("Основное")]);
+  let activeShelfId = $state<string>("main");
+  let isShiftPressed = $state(false);
+  let editingShelfId = $state<string | null>(null);
+  let editingShelfName = $state("");
+  let contextMenuShelfId = $state<string | null>(null);
+  let contextMenuPos = $state<{ x: number; y: number } | null>(null);
+  let springHoverTimer: number | null = null;
+  let springHoverTargetId = $state<string | null>(null);
+  let springHoverAddBtn = $state<boolean>(false);
+
   let isDragOver = $state(false);
   let theme = $state<ThemeMode>("system");
   let effectiveTheme = $state<"dark" | "light">("dark");
@@ -82,7 +103,13 @@
   let countdownTimer: number | null = null;
 
   // --- Svelte 5 Runes ($derived) ---
+  let currentShelf = $derived(
+    shelves.find((s) => s.id === activeShelfId) ?? shelves[0]
+  );
+  let items = $derived(currentShelf?.items ?? []);
   let itemsCount = $derived(items.length);
+  let totalAllItemsCount = $derived(getTotalItemsCount(shelves));
+  let totalShelvesCount = $derived(shelves.length);
   let totalBytes = $derived(
     items.reduce((acc, it) => acc + (it.size_bytes || 0), 0)
   );
@@ -159,14 +186,6 @@
   function toggleLang() {
     lang = lang === "ru" ? "en" : "ru";
     saveAllSettings();
-  }
-
-  function formatBytes(bytes: number): string {
-    if (bytes === 0) return "0 Б";
-    const k = 1024;
-    const sizes = ["Б", "КБ", "МБ", "ГБ"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
   }
 
   // Автоматически синхронизируем выделение: новые файлы сразу выделены
@@ -250,34 +269,257 @@
     saveAllSettings();
   }
 
-  // --- Tauri IPC операции ---
+  // --- Tauri IPC и управление полками ---
   async function loadItems() {
     try {
-      items = await invoke<StashItem[]>("get_stash_items");
+      const initial = await invoke<StashItem[]>("get_stash_items");
+      if (initial && initial.length > 0) {
+        shelves[0].items = initial;
+      }
     } catch (e) {
       console.error("Ошибка загрузки элементов:", e);
     }
   }
 
-  async function removeItem(id: String) {
+  async function loadPinnedShelves() {
     try {
-      items = await invoke<StashItem[]>("remove_stash_item", { id });
-      if (items.length === 0) {
-        // Если карман опустел, автоскрытие
-        setTimeout(hideShelf, 300);
+      const configs = await invoke<ShelfConfig[]>("get_pinned_shelves");
+      if (configs && configs.length > 0) {
+        shelves = restoreShelvesFromConfig(configs, t.defaultShelfName);
       }
     } catch (e) {
+      console.error("Ошибка загрузки pinned полок:", e);
+    }
+  }
+
+  async function switchActiveShelf(shelfId: string) {
+    if (activeShelfId === shelfId) return;
+    cancelClearCountdown();
+    activeShelfId = shelfId;
+    const target = shelves.find((s) => s.id === shelfId);
+    if (target) {
+      selectedIds = new Set(target.items.map((it) => String(it.id)));
+      try {
+        await invoke("set_stash_items", { newItems: target.items });
+      } catch (err) {
+        console.error("Ошибка синхронизации active shelf:", err);
+      }
+    }
+    setTimeout(() => {
+      const activeTabEl = document.querySelector<HTMLElement>(`.shelf-tab[data-shelf-id="${shelfId}"]`);
+      activeTabEl?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+    }, 20);
+  }
+
+  async function handleAddNewShelf(pinned = false, initialItems: StashItem[] = []) {
+    cancelClearCountdown();
+    const newShelf = createNewShelf(shelves, t.newShelfName, pinned);
+    newShelf.items = initialItems;
+    shelves = [...shelves, newShelf];
+    await switchActiveShelf(newShelf.id);
+    if (pinned) {
+      await persistPinnedShelves();
+    }
+  }
+
+  async function handleCloseShelf(shelfId: string) {
+    const shelf = shelves.find((s) => s.id === shelfId);
+    if (!shelf || !canCloseShelf(shelf, shelves.length)) return;
+
+    const remaining = shelves.filter((s) => s.id !== shelfId);
+    shelves = remaining;
+    if (activeShelfId === shelfId) {
+      await switchActiveShelf(remaining[0].id);
+    }
+    if (shelf.pinned) {
+      await persistPinnedShelves();
+    }
+  }
+
+  async function togglePinShelf(shelfId: string) {
+    shelves = shelves.map((s) => (s.id === shelfId ? { ...s, pinned: !s.pinned } : s));
+    await persistPinnedShelves();
+  }
+
+  async function persistPinnedShelves() {
+    try {
+      const configs = serializePinnedShelves(shelves);
+      await invoke("save_pinned_shelves", { shelves: configs });
+    } catch (err) {
+      console.error("Ошибка сохранения pinned полок:", err);
+    }
+  }
+
+  function startEditingShelf(shelf: Shelf) {
+    editingShelfId = shelf.id;
+    editingShelfName = shelf.name;
+  }
+
+  async function commitEditingShelf() {
+    if (!editingShelfId) return;
+    const trimmed = editingShelfName.trim();
+    if (trimmed) {
+      shelves = shelves.map((s) => (s.id === editingShelfId ? { ...s, name: trimmed } : s));
+      const target = shelves.find((s) => s.id === editingShelfId);
+      if (target?.pinned) {
+        await persistPinnedShelves();
+      }
+    }
+    editingShelfId = null;
+    editingShelfName = "";
+  }
+
+  function cancelEditingShelf() {
+    editingShelfId = null;
+    editingShelfName = "";
+  }
+
+  function handleTabContextMenu(e: MouseEvent, shelfId: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    contextMenuShelfId = shelfId;
+    contextMenuPos = { x: Math.min(e.clientX, 200), y: e.clientY };
+  }
+
+  function closeContextMenu() {
+    contextMenuShelfId = null;
+    contextMenuPos = null;
+  }
+
+  function handleTabsWheel(e: WheelEvent) {
+    if (shelves.length <= 1) return;
+    e.preventDefault();
+    const curIdx = shelves.findIndex((s) => s.id === activeShelfId);
+    if (e.deltaY > 0 || e.deltaX > 0) {
+      const nextIdx = (curIdx + 1) % shelves.length;
+      switchActiveShelf(shelves[nextIdx].id);
+    } else if (e.deltaY < 0 || e.deltaX < 0) {
+      const prevIdx = (curIdx - 1 + shelves.length) % shelves.length;
+      switchActiveShelf(shelves[prevIdx].id);
+    }
+  }
+
+  function clearDragHover() {
+    springHoverTargetId = null;
+    springHoverAddBtn = false;
+    if (springHoverTimer) {
+      clearTimeout(springHoverTimer);
+      springHoverTimer = null;
+    }
+  }
+
+  function handleDragPoint(x: number, y: number) {
+    const elem = document.elementFromPoint(x, y);
+    const tabEl = elem?.closest<HTMLElement>("[data-shelf-id]");
+    const addBtn = elem?.closest<HTMLElement>(".tab-add-btn");
+
+    if (tabEl) {
+      const shelfId = tabEl.dataset.shelfId;
+      springHoverAddBtn = false;
+      if (shelfId && shelfId !== activeShelfId) {
+        if (springHoverTargetId !== shelfId) {
+          if (springHoverTimer) clearTimeout(springHoverTimer);
+          springHoverTargetId = shelfId;
+          springHoverTimer = window.setTimeout(async () => {
+            await switchActiveShelf(shelfId);
+            springHoverTargetId = null;
+          }, 300);
+        }
+      } else {
+        if (springHoverTimer) {
+          clearTimeout(springHoverTimer);
+          springHoverTimer = null;
+        }
+        springHoverTargetId = null;
+      }
+    } else if (addBtn) {
+      springHoverTargetId = null;
+      if (!springHoverAddBtn) {
+        springHoverAddBtn = true;
+        if (springHoverTimer) clearTimeout(springHoverTimer);
+        springHoverTimer = window.setTimeout(async () => {
+          const newShelf = createNewShelf(shelves, t.newShelfName, false);
+          shelves = [...shelves, newShelf];
+          await switchActiveShelf(newShelf.id);
+          springHoverAddBtn = false;
+          springHoverTimer = null;
+        }, 350);
+      }
+    } else {
+      clearDragHover();
+    }
+  }
+
+  function handleShelfDragOver(e: DragEvent, shelfId: string) {
+    e.preventDefault();
+    if (shelfId !== activeShelfId && springHoverTargetId !== shelfId) {
+      if (springHoverTimer) clearTimeout(springHoverTimer);
+      springHoverTargetId = shelfId;
+      springHoverTimer = window.setTimeout(async () => {
+        await switchActiveShelf(shelfId);
+        springHoverTargetId = null;
+      }, 300);
+    }
+  }
+
+  function handleShelfDragLeave() {
+    clearDragHover();
+  }
+
+  async function handleShelfDrop(e: DragEvent, targetShelfId: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    clearDragHover();
+    await switchActiveShelf(targetShelfId);
+    await handleContainerDrop(e);
+  }
+
+  async function handleNewShelfDrop(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    clearDragHover();
+    const newShelf = createNewShelf(shelves, t.newShelfName, false);
+    shelves = [...shelves, newShelf];
+    await switchActiveShelf(newShelf.id);
+    await handleContainerDrop(e);
+  }
+
+  async function removeItem(id: String) {
+    const targetId = activeShelfId;
+    const nextItems = currentShelf.items.filter((it) => it.id !== id);
+    shelves = shelves.map((s) => (s.id === targetId ? { ...s, items: nextItems } : s));
+    syncSelectionWithItems();
+    try {
+      await invoke("set_stash_items", { newItems: nextItems });
+    } catch (e) {
       console.error("Ошибка удаления:", e);
+    }
+
+    if (nextItems.length === 0) {
+      if (!currentShelf.pinned && shelves.length > 1) {
+        handleCloseShelf(currentShelf.id);
+      } else if (totalAllItemsCount === 0) {
+        setTimeout(hideShelf, 300);
+      }
     }
   }
 
   async function clearAll() {
+    const targetId = activeShelfId;
+    const isPinned = currentShelf.pinned;
+    shelves = shelves.map((s) => (s.id === targetId ? { ...s, items: [] } : s));
+    syncSelectionWithItems();
     try {
-      items = await invoke<StashItem[]>("clear_stash");
-      showNotice(t.pocketCleared);
-      setTimeout(hideShelf, 400);
+      await invoke("set_stash_items", { newItems: [] });
     } catch (e) {
       console.error("Ошибка очистки:", e);
+    }
+    showNotice(t.pocketCleared);
+
+    if (!isPinned && shelves.length > 1) {
+      handleCloseShelf(targetId);
+    } else if (totalAllItemsCount === 0) {
+      setTimeout(hideShelf, 400);
     }
   }
 
@@ -548,7 +790,9 @@
 
   onMount(() => {
     loadAppSettings();
-    loadItems().then(() => syncSelectionWithItems());
+    loadPinnedShelves().then(() => {
+      loadItems().then(() => syncSelectionWithItems());
+    });
 
     // Инициализируем приём файлов OLE Drop Target на дочерних окнах WebView2
     setTimeout(() => {
@@ -569,13 +813,27 @@
 
     // Слушатели событий Tauri
     const unlistenUpdated = listen<StashItem[]>("stash-updated", (event) => {
-      items = event.payload;
+      const newItems = event.payload || [];
+      const targetId = activeShelfId;
+      shelves = shelves.map((s) => (s.id === targetId ? { ...s, items: newItems } : s));
       syncSelectionWithItems();
       cancelClearCountdown();
     });
 
+    const unlistenDropWithShift = listen<StashItem[]>("stash-drop-with-shift", (event) => {
+      const newItems = event.payload || [];
+      if (newItems.length > 0) {
+        handleAddNewShelf(false, newItems);
+      }
+    });
+
+    const unlistenDragShift = listen<boolean>("drag-shift-state", (event) => {
+      isShiftPressed = event.payload;
+    });
+
     const unlistenCleared = listen("stash-cleared", () => {
-      items = [];
+      const targetId = activeShelfId;
+      shelves = shelves.map((s) => (s.id === targetId ? { ...s, items: [] } : s));
       selectedIds = new Set();
       cancelClearCountdown();
     });
@@ -585,8 +843,8 @@
       if (droppedPaths.size === 0) return;
 
       // Если перетаскивали отдельный файл из нескольких — удаляем только его
-      if (droppedPaths.size === 1 && items.length > 1) {
-        const itemToRemove = items.find((it) => it.path && droppedPaths.has(it.path));
+      if (droppedPaths.size === 1 && currentShelf.items.length > 1) {
+        const itemToRemove = currentShelf.items.find((it) => it.path && droppedPaths.has(it.path));
         if (itemToRemove) {
           removeItem(itemToRemove.id);
           return;
@@ -604,11 +862,79 @@
 
     const unlistenLeave = listen("drag-leave", () => {
       isDragOver = false;
+      isShiftPressed = false;
+      clearDragHover();
+    });
+
+    const unlistenCursorMove = listen<{ x: number; y: number }>("drag-cursor-move", (event) => {
+      isDragOver = true;
+      cancelClearCountdown();
+      if (event.payload) {
+        handleDragPoint(event.payload.x, event.payload.y);
+      }
+    });
+
+    const unlistenCursorLeave = listen("drag-cursor-leave", () => {
+      clearDragHover();
+    });
+
+    const unlistenDropAt = listen<{
+      items: StashItem[];
+      x: number;
+      y: number;
+      is_shift: boolean;
+    }>("stash-drop-at", async (event) => {
+      clearDragHover();
+      isDragOver = false;
+      const payload = event.payload;
+      if (!payload || !payload.items || payload.items.length === 0) return;
+      const { items: newRawItems, x, y, is_shift } = payload;
+      cancelClearCountdown();
+
+      if (is_shift) {
+        handleAddNewShelf(false, newRawItems);
+        return;
+      }
+
+      const elem = document.elementFromPoint(x, y);
+      const tabEl = elem?.closest<HTMLElement>("[data-shelf-id]");
+      const addBtn = elem?.closest<HTMLElement>(".tab-add-btn");
+
+      if (addBtn) {
+        handleAddNewShelf(false, newRawItems);
+        return;
+      }
+
+      let targetId = activeShelfId;
+      if (tabEl && tabEl.dataset.shelfId) {
+        targetId = tabEl.dataset.shelfId;
+      }
+
+      // Добавляем элементы в целевую полку без дубликатов по path
+      const targetShelf = shelves.find((s) => s.id === targetId);
+      if (targetShelf) {
+        const existingPaths = new Set(targetShelf.items.map((it) => it.path));
+        const itemsToAdd = newRawItems.filter((it: StashItem) => !existingPaths.has(it.path));
+        if (itemsToAdd.length > 0) {
+          shelves = shelves.map((s) =>
+            s.id === targetId ? { ...s, items: [...s.items, ...itemsToAdd] } : s
+          );
+        }
+      }
+
+      if (activeShelfId !== targetId) {
+        await switchActiveShelf(targetId);
+      } else {
+        const cur = shelves.find((s) => s.id === activeShelfId);
+        if (cur) {
+          await invoke("set_stash_items", { newItems: cur.items });
+        }
+        syncSelectionWithItems();
+      }
     });
 
     const unlistenMouseUp = listen("global-mouse-up", () => {
-      // Больше не прячем карман внезапно при отпускании ЛКМ,
-      // позволяя спокойно перетащить или сбросить файл.
+      // Больше не прячем карман внезапно при отпускании ЛКМ
     });
 
     const unlistenAbout = listen("open-about-tab", () => {
@@ -623,24 +949,66 @@
       updateResult = event.payload;
     });
 
-    // Хоткей Escape для закрытия настроек, Local Drop или скрытия кармана, Ctrl+A для выделения всех
+    // Хоткеи клавиатуры
     const keyHandler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (showMobileDrop) {
+        if (contextMenuShelfId) {
+          closeContextMenu();
+        } else if (editingShelfId) {
+          cancelEditingShelf();
+        } else if (showMobileDrop) {
           closeMobileDrop();
         } else if (showSettings) {
           showSettings = false;
         } else {
           hideShelf();
         }
+      } else if (e.key === "F2") {
+        const cur = currentShelf;
+        if (cur) startEditingShelf(cur);
       } else if ((e.ctrlKey || e.metaKey) && (e.key === "a" || e.key === "A" || e.key === "ф" || e.key === "Ф")) {
         if (items.length > 0) {
           e.preventDefault();
           toggleSelectAll();
         }
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === "w" || e.key === "W" || e.key === "ц" || e.key === "Ц")) {
+        e.preventDefault();
+        handleCloseShelf(activeShelfId);
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === "t" || e.key === "T" || e.key === "е" || e.key === "Е")) {
+        e.preventDefault();
+        handleAddNewShelf(false);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === "Tab") {
+        if (shelves.length > 1) {
+          e.preventDefault();
+          const curIdx = shelves.findIndex((s) => s.id === activeShelfId);
+          const nextIdx = e.shiftKey
+            ? (curIdx - 1 + shelves.length) % shelves.length
+            : (curIdx + 1) % shelves.length;
+          switchActiveShelf(shelves[nextIdx].id);
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key >= "1" && e.key <= "9") {
+        const num = parseInt(e.key, 10) - 1;
+        if (num < shelves.length) {
+          e.preventDefault();
+          switchActiveShelf(shelves[num].id);
+        }
       }
     };
+
+    const handleShiftKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Shift") isShiftPressed = true;
+    };
+    const handleShiftKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "Shift") isShiftPressed = false;
+    };
+    const handleGlobalClick = () => {
+      if (contextMenuShelfId) closeContextMenu();
+    };
+
     window.addEventListener("keydown", keyHandler);
+    window.addEventListener("keydown", handleShiftKeyDown);
+    window.addEventListener("keyup", handleShiftKeyUp);
+    window.addEventListener("click", handleGlobalClick);
 
     // Глобальные слушатели окна для предотвращения курсора-стопа при перетаскивании
     const windowDragOver = (e: DragEvent) => {
@@ -648,6 +1016,7 @@
       if (e.dataTransfer) {
         e.dataTransfer.dropEffect = "copy";
       }
+      if (e.shiftKey) isShiftPressed = true;
     };
     const windowDrop = (e: DragEvent) => {
       e.preventDefault();
@@ -658,18 +1027,27 @@
     return () => {
       mediaQuery.removeEventListener("change", themeListener);
       window.removeEventListener("keydown", keyHandler);
+      window.removeEventListener("keydown", handleShiftKeyDown);
+      window.removeEventListener("keyup", handleShiftKeyUp);
+      window.removeEventListener("click", handleGlobalClick);
       window.removeEventListener("dragover", windowDragOver);
       window.removeEventListener("drop", windowDrop);
       cancelClearCountdown();
+      if (springHoverTimer) clearTimeout(springHoverTimer);
       if (edgeCollapseTimer !== null) {
         clearTimeout(edgeCollapseTimer);
         edgeCollapseTimer = null;
       }
       unlistenUpdated.then((f) => f());
+      unlistenDropWithShift.then((f) => f());
+      unlistenDragShift.then((f) => f());
       unlistenCleared.then((f) => f());
       unlistenDragCompleted.then((f) => f());
       unlistenEnter.then((f) => f());
       unlistenLeave.then((f) => f());
+      unlistenCursorMove.then((f) => f());
+      unlistenCursorLeave.then((f) => f());
+      unlistenDropAt.then((f) => f());
       unlistenMouseUp.then((f) => f());
       unlistenAbout.then((f) => f());
       unlistenUpdateStatus.then((f) => f());
@@ -682,6 +1060,17 @@
     isDragOver = false;
 
     if (!e.dataTransfer) return;
+
+    const shouldCreateShelf = e.shiftKey || isShiftPressed;
+    isShiftPressed = false;
+    let targetShelfId = activeShelfId;
+
+    if (shouldCreateShelf) {
+      const newShelf = createNewShelf(shelves, t.newShelfName, false);
+      shelves = [...shelves, newShelf];
+      targetShelfId = newShelf.id;
+      await switchActiveShelf(newShelf.id);
+    }
 
     // 1. Проверяем файлы (если браузер / WebView2 передал File объекты с path)
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
@@ -696,7 +1085,8 @@
 
       if (filePaths.length > 0) {
         try {
-          items = await invoke<StashItem[]>("add_stash_item_paths", { paths: filePaths });
+          const updated = await invoke<StashItem[]>("add_stash_item_paths", { paths: filePaths });
+          shelves = shelves.map((s) => (s.id === targetShelfId ? { ...s, items: updated } : s));
           syncSelectionWithItems();
           return;
         } catch (err) {
@@ -731,7 +1121,8 @@
       if (allUrls) {
         for (const line of lines) {
           try {
-            items = await invoke<StashItem[]>("add_stash_text", { text: line });
+            const updated = await invoke<StashItem[]>("add_stash_text", { text: line });
+            shelves = shelves.map((s) => (s.id === targetShelfId ? { ...s, items: updated } : s));
             syncSelectionWithItems();
           } catch (err) {
             console.error("Ошибка добавления ссылки:", err);
@@ -739,7 +1130,8 @@
         }
       } else {
         try {
-          items = await invoke<StashItem[]>("add_stash_text", { text: contentToAdd.trim() });
+          const updated = await invoke<StashItem[]>("add_stash_text", { text: contentToAdd.trim() });
+          shelves = shelves.map((s) => (s.id === targetShelfId ? { ...s, items: updated } : s));
           syncSelectionWithItems();
         } catch (err) {
           console.error("Ошибка добавления текста:", err);
@@ -782,10 +1174,10 @@
   <!-- Верхний тулбар -->
   <header class="shelf-header">
     <div class="brand">
-      <div class="glow-indicator" class:active={itemsCount > 0}></div>
+      <div class="glow-indicator" class:active={totalAllItemsCount > 0}></div>
       <span class="app-title">StashIt</span>
-      {#if itemsCount > 0}
-        <span class="badge">{itemsCount}</span>
+      {#if totalAllItemsCount > 0}
+        <span class="badge">{totalAllItemsCount}</span>
       {/if}
     </div>
 
@@ -860,6 +1252,145 @@
       </button>
     </div>
   </header>
+
+  <!-- Панель вкладок полок (Multi-Stash Tabs Bar) -->
+  {#if !showSettings && !showMobileDrop && (shelves.length > 1 || isDragOver)}
+    <div 
+      class="shelves-tabs-bar" 
+      onwheel={handleTabsWheel}
+      role="tablist"
+    >
+      <div class="tabs-scroll-area">
+        {#each shelves as shelf (shelf.id)}
+          <div 
+            class="shelf-tab" 
+            class:active={shelf.id === activeShelfId}
+            class:pinned={shelf.pinned}
+            class:drop-hover={springHoverTargetId === shelf.id}
+            data-shelf-id={shelf.id}
+            role="tab"
+            tabindex="0"
+            aria-selected={shelf.id === activeShelfId}
+            onclick={() => switchActiveShelf(shelf.id)}
+            onkeydown={(e) => {
+              if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                switchActiveShelf(shelf.id);
+              }
+            }}
+            ondblclick={() => startEditingShelf(shelf)}
+            oncontextmenu={(e) => handleTabContextMenu(e, shelf.id)}
+            ondragover={(e) => handleShelfDragOver(e, shelf.id)}
+            ondragleave={handleShelfDragLeave}
+            ondrop={(e) => handleShelfDrop(e, shelf.id)}
+            title={shelf.name}
+          >
+            {#if editingShelfId === shelf.id}
+              <!-- svelte-ignore a11y_autofocus -->
+              <input 
+                type="text" 
+                class="shelf-rename-input" 
+                bind:value={editingShelfName} 
+                onkeydown={(e) => {
+                  if (e.key === 'Enter') commitEditingShelf();
+                  if (e.key === 'Escape') cancelEditingShelf();
+                }}
+                onblur={commitEditingShelf}
+                autofocus
+              />
+            {:else}
+              {#if shelf.pinned}
+                <span class="tab-pin-icon" title={t.pinShelf}>📌</span>
+              {/if}
+              <span class="tab-title">{shelf.name}</span>
+              <span class="tab-count-badge" class:has-items={shelf.items.length > 0}>
+                {shelf.items.length}
+              </span>
+              {#if canCloseShelf(shelf, shelves.length)}
+                <button 
+                  class="tab-close-btn" 
+                  title={t.closeShelf} 
+                  onclick={(e) => { e.stopPropagation(); handleCloseShelf(shelf.id); }}
+                >
+                  ✕
+                </button>
+              {/if}
+            {/if}
+          </div>
+        {/each}
+      </div>
+
+      <!-- Кнопка создания новой полки [+] (всегда зафиксирована справа) -->
+      <button 
+        class="tab-add-btn" 
+        class:drop-hover={springHoverAddBtn}
+        title={t.newShelfTooltip}
+        onclick={() => handleAddNewShelf(false)}
+        ondragover={(e) => e.preventDefault()}
+        ondrop={handleNewShelfDrop}
+      >
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  {/if}
+
+  <!-- Плавающая подсказка при драге о создании полки с Shift -->
+  {#if isDragOver}
+    <div class="drag-hint-banner" class:shift-active={isShiftPressed}>
+      <span class="key-badge">⇧ Shift</span>
+      <span>{t.shiftDropHint}</span>
+    </div>
+  {/if}
+
+  <!-- Контекстное меню полки (ПКМ) -->
+  {#if contextMenuShelfId && contextMenuPos}
+    <div 
+      class="context-menu" 
+      style="top: {contextMenuPos.y}px; left: {contextMenuPos.x}px;"
+    >
+      <button 
+        class="context-menu-item" 
+        onclick={() => {
+          const target = shelves.find((s) => s.id === contextMenuShelfId);
+          if (target) startEditingShelf(target);
+          closeContextMenu();
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <span>{t.renameShelf}</span>
+      </button>
+
+      <button 
+        class="context-menu-item" 
+        onclick={() => {
+          if (contextMenuShelfId) togglePinShelf(contextMenuShelfId);
+          closeContextMenu();
+        }}
+      >
+        <span style="font-size: 11px;">📌</span>
+        <span>
+          {shelves.find((s) => s.id === contextMenuShelfId)?.pinned ? t.unpinShelf : t.pinShelf}
+        </span>
+      </button>
+
+      {#if canCloseShelf(shelves.find((s) => s.id === contextMenuShelfId)!, shelves.length)}
+        <div class="context-menu-divider"></div>
+        <button 
+          class="context-menu-item danger" 
+          onclick={() => {
+            if (contextMenuShelfId) handleCloseShelf(contextMenuShelfId);
+            closeContextMenu();
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <span>{t.closeShelf}</span>
+        </button>
+      {/if}
+    </div>
+  {/if}
 
   <!-- Уведомление о статусе -->
   {#if statusNotice}
@@ -1225,8 +1756,8 @@
         <div class="drop-icon">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         </div>
-        <p class="drop-hint">{t.dropHint}</p>
-        <span class="sub-hint">{t.subHint}</span>
+        <p class="drop-hint">{shelves.length > 1 ? t.emptyShelfHint : t.dropHint}</p>
+        <span class="sub-hint">{shelves.length > 1 ? t.emptyShelfSubHint : t.subHint}</span>
       </div>
     {:else}
       <div class="items-list">
@@ -1427,6 +1958,256 @@
     align-items: center;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border-color);
+  }
+
+  /* Вкладки полок (Multi-Stash Tabs Bar) */
+  /* Вкладки полок (Multi-Stash Tabs Bar) */
+  .shelves-tabs-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 0 4px 0;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--border-color);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .tabs-scroll-area {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1 1 0;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-right: 2px;
+  }
+
+  .tabs-scroll-area::-webkit-scrollbar {
+    display: none;
+  }
+
+  .shelf-tab {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--card-bg);
+    border: 1px solid transparent;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    max-width: 120px;
+    min-width: 50px;
+    flex-shrink: 0;
+  }
+
+  .shelf-tab:hover {
+    background: var(--card-hover);
+    color: var(--text-main);
+  }
+
+  .shelf-tab.active {
+    background: rgba(255, 255, 255, 0.14);
+    color: var(--text-main);
+    font-weight: 600;
+    border-color: rgba(56, 189, 248, 0.5);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .shelf-tab.drop-hover {
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.25);
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+    transform: translateY(-1px);
+  }
+
+  :global([data-theme="light"]) .shelf-tab.active {
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  .tab-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tab-pin-icon {
+    font-size: 10px;
+    line-height: 1;
+    opacity: 0.9;
+  }
+
+  .tab-count-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    transition: all 0.15s ease;
+  }
+
+  .tab-count-badge.has-items {
+    background: rgba(56, 189, 248, 0.2);
+    color: var(--accent);
+  }
+
+  .tab-close-btn {
+    background: transparent;
+    border: none;
+    padding: 0 2px;
+    font-size: 9px;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 4px;
+    line-height: 1;
+    transition: all 0.15s ease;
+  }
+
+  .tab-close-btn:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.2);
+  }
+
+  .tab-add-btn {
+    background: var(--card-bg);
+    border: 1px dashed var(--border-color);
+    color: var(--text-muted);
+    border-radius: 6px;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .tab-add-btn:hover {
+    background: var(--card-hover);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .tab-add-btn.drop-hover {
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.25);
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+    transform: scale(1.1);
+  }
+
+  .shelf-rename-input {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--accent);
+    color: var(--text-main);
+    font-size: 11px;
+    padding: 1px 4px;
+    border-radius: 4px;
+    width: 75px;
+    outline: none;
+    font-family: inherit;
+  }
+
+  /* Плавающая подсказка при драге */
+  .drag-hint-banner {
+    position: absolute;
+    bottom: 46px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: fit-content;
+    max-width: calc(100% - 40px);
+    white-space: nowrap;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    z-index: 999;
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .drag-hint-banner.shift-active {
+    background: rgba(56, 189, 248, 0.25);
+    border-color: #38bdf8;
+    color: #ffffff;
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.6);
+    transform: translateX(-50%) scale(1.04);
+  }
+
+  .key-badge {
+    background: var(--accent);
+    color: #0f172a;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 10px;
+  }
+
+  /* Контекстное меню ПКМ */
+  .context-menu {
+    position: fixed;
+    background: var(--bg-surface);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 140px;
+  }
+
+  .context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--text-main);
+    font-size: 11px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .context-menu-item:hover {
+    background: var(--card-hover);
+  }
+
+  .context-menu-item.danger:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+  }
+
+  .context-menu-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 2px 0;
   }
 
   .brand {

@@ -39,6 +39,12 @@ class FaqSection extends StatelessWidget {
         'aEn': 'Click the phone icon in the shelf header to open the pairing QR code (devices must share the same Wi-Fi network). Scan it with your smartphone camera to open a secure mobile web app. You can upload photos, shoot camera pictures, send files or text notes directly into the desktop shelf, and download items back to your phone or share them via the mobile share sheet. No cloud accounts, zero setup, 100% local.',
       },
       {
+        'qRu': 'Как работают мульти-полки и вкладки (Multi-Stash)?',
+        'qEn': 'How do multi-shelf tabs work (Multi-Stash)?',
+        'aRu': 'Вы можете создавать несколько независимых полок: зажмите клавишу Shift при сбросе файлов, нажмите кнопку [+] или комбинацию Ctrl+T. Полки можно закреплять (Pin), чтобы они не закрывались после очистки, и переименовывать. Переключаться между ними можно кликом, колесиком мыши или хоткеями Ctrl+1..9 и Ctrl+Tab. При перетаскивании файлов наведение на вкладку открывает её автоматически.',
+        'aEn': 'You can create multiple independent shelves: hold Shift while dropping files, click [+] or press Ctrl+T. Shelves can be pinned to keep them open and renamed. Switch tabs by clicking, scrolling with mouse wheel, or pressing Ctrl+1..9 and Ctrl+Tab. Hovering over a tab while dragging files opens it automatically.',
+      },
+      {
         'qRu': 'Как обновляется StashIt?',
         'qEn': 'How does StashIt update?',
         'aRu': 'В программе есть раздел «О программе» с проверкой новых релизов прямо из GitHub Releases. Приложение может ненавязчиво уведомлять о свежих версиях или проверять их по нажатию кнопки.',

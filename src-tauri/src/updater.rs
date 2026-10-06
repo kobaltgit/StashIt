@@ -265,3 +265,45 @@ pub fn start_background_updater(app: AppHandle) {
         }
     });
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_version_newer_patch() {
+        assert!(is_version_newer("1.3.2", "1.3.1"));
+        assert!(!is_version_newer("1.3.1", "1.3.2"));
+    }
+
+    #[test]
+    fn test_is_version_newer_minor() {
+        assert!(is_version_newer("1.4.0", "1.3.1"));
+        assert!(!is_version_newer("1.3.0", "1.3.1"));
+    }
+
+    #[test]
+    fn test_is_version_newer_major() {
+        assert!(is_version_newer("2.0.0", "1.9.9"));
+        assert!(!is_version_newer("1.0.0", "2.0.0"));
+    }
+
+    #[test]
+    fn test_is_version_newer_equal() {
+        assert!(!is_version_newer("1.3.1", "1.3.1"));
+        assert!(!is_version_newer("v1.3.1", "1.3.1"));
+        assert!(!is_version_newer("1.3.1", "v1.3.1"));
+    }
+
+    #[test]
+    fn test_is_version_newer_prefix_v() {
+        assert!(is_version_newer("v1.4.0", "v1.3.1"));
+        assert!(is_version_newer("V2.0.0", "1.3.1"));
+    }
+
+    #[test]
+    fn test_is_version_newer_different_lengths() {
+        assert!(is_version_newer("1.3.1.1", "1.3.1"));
+        assert!(!is_version_newer("1.3", "1.3.1"));
+    }
+}

@@ -50,15 +50,14 @@ jobs:
             ## 🚀 StashIt v__VERSION__
 
             ### 🇷🇺 Что нового в версии v__VERSION__:
-            * **Упрощённое управление окном и сворачивание в трей**:
-              - Кнопка **`✕` (крестик)** в шапке теперь аккуратно скрывает окно кармана в трей (как клавиша `Esc`), не завершая фоновые службы и глобальные горячие клавиши.
-              - Панель заголовка очищена от лишней кнопки «—» (минус) — лаконичный интерфейс без путаницы.
-              - Полное завершение работы StashIt доступно через контекстное меню иконки в системном трее («Выход») или кнопку в настройках.
-            * **Двусторонний обмен со смартфоном по Wi-Fi (Phone Drop)**:
-              - **Мгновенное сопряжение по QR-коду**: кнопка телефона в шапке открывает нативный экран с QR-кодом для быстрого подключения смартфона без проводов и сторонних серверов.
-              - **Передача со смартфона на ПК**: отправка фото, прямой снимок с камеры, передача документов, текста и ссылок сразу в карман.
-              - **Скачивание и шеринг с ПК на смартфон**: удобный предпросмотр файлов кармана на экране телефона, скачивание и отправка через нативное меню шеринга.
-              - **On-Demand микросервер на Rust**: работает только при открытом окне QR-кода и мгновенно выключается при скрытии кармана (0% CPU, строго <25 МБ ОЗУ).
+            * **Мульти-полки и вкладки (Multi-Stash Tabs)**:
+              - **Независимые полки**: разделяйте файлы по проектам и задачам в отдельных вкладках.
+              - **Создание с Shift**: сброс файлов с зажатой клавишей `Shift` мгновенно создаёт новую полку с этими файлами.
+              - **Постоянные и временные полки**: закрепляйте избранные полки (Pin 📌), чтобы они не закрывались после очистки и сохранялись между сессиями.
+              - **Эргономичная навигация**: фиксированная справа кнопка `[+]`, переключение кликом, колёсиком мыши или шорткатами `Ctrl + 1..9` / `Ctrl + Tab`, создание `Ctrl + T`, закрытие `Ctrl + W`, переименование `F2` / двойной клик.
+              - **Spring-Loaded Tabs при перетаскивании**: наведение файлов из Проводника на неактивную вкладку на 300 мс автоматически открывает её; прямой сброс на вкладку или `[+]` отправляет файлы по адресу.
+            * **Комплексный автоматический тест-сьют**:
+              - 41 юнит-тест, покрывающий Rust бэкенд (`cargo test`), Svelte 5 фронтенд (`vitest`) и Flutter Web сайт (`flutter test`).
             * **Автоматическая CI/CD сборка релизов**: генерация 3 вариантов дистрибутива:
               - **`StashIt___VERSION___x64-setup.exe`** — быстрый NSIS инсталлятор (без прав UAC)
               - **`StashIt___VERSION___x64_en-US.msi`** — Windows Installer package (MSI)
@@ -67,15 +66,14 @@ jobs:
             ---
 
             ### 🇬🇧 What's New in v__VERSION__:
-            * **Simplified Window Management & Tray Minimize**:
-              - The **`✕` (close)** button in the header now smoothly hides the shelf to tray (identical to `Esc`), keeping shortcuts and background hooks active.
-              - Removed the redundant «—» button from the header for a cleaner, modern look.
-              - Clean application exit is always accessible via system tray context menu ("Exit") or Settings panel.
-            * **Two-Way Wi-Fi Phone Drop (QR Code Pairing)**:
-              - **Instant QR Pairing**: tap the phone icon in shelf header to pair instantly on local Wi-Fi with zero setup or cloud accounts.
-              - **Phone to PC Upload**: upload photos, snap live camera shots, send files, documents, and notes straight to desktop shelf.
-              - **PC to Phone Download & Share**: browse shelf items with live thumbnails, download files, or share via native Web Share API.
-              - **On-Demand Rust Server**: micro-server spins up only when pairing is active and stops automatically when closed (0% idle CPU, <25 MB RAM).
+            * **Multi-Shelf Tabs (Multi-Stash)**:
+              - **Multiple Shelves**: organize files across independent tabs for different projects or tasks.
+              - **Instant Shift-Drop**: drop files while holding `Shift` to automatically create a new shelf.
+              - **Pinned & Temporary Shelves**: pin favorite shelves (Pin 📌) to keep them persistent across sessions.
+              - **Ergonomic Navigation**: pinned `[+]` button on the right, mouse wheel scrolling over tabs, `Ctrl + 1..9` / `Ctrl + Tab` switching, `Ctrl + T` new shelf, `Ctrl + W` close shelf, `F2` / double-click rename.
+              - **Spring-Loaded Tabs**: hovering over inactive tabs while dragging files from Explorer opens them after 300 ms; direct drop onto tab header or `[+]` targets that shelf.
+            * **Automated Test Suite**:
+              - 41 unit tests covering Rust backend (`cargo test`), Svelte 5 frontend (`vitest`), and Flutter Web site (`flutter test`).
             * **Automated CI/CD Release Builds**:
               - **`StashIt___VERSION___x64-setup.exe`** — fast NSIS installer (no admin rights required)
               - **`StashIt___VERSION___x64_en-US.msi`** — Windows Installer package (MSI)

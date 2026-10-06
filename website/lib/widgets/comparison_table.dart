@@ -63,6 +63,14 @@ class ComparisonTable extends StatelessWidget {
                   ),
                   TableRow(
                     children: [
+                      _cell(Strings.get('Мульти-полки (вкладки)', 'Multi-Shelf Tabs')),
+                      _cell(Strings.get('Да (вкладки, Pin, Shift-drop)', 'Yes (Tabs, Pin, Shift-drop)'), color: AppColors.isDark ? Colors.greenAccent : const Color(0xFF059669)),
+                      _cell(Strings.get('Да (отдельные окна)', 'Yes (Separate windows)')),
+                      _cell(Strings.get('Нет', 'No')),
+                    ],
+                  ),
+                  TableRow(
+                    children: [
                       _cell(Strings.get('ОЗУ в фоне', 'Background RAM')),
                       _cell('< 25 МБ RAM', color: AppColors.isDark ? Colors.greenAccent : const Color(0xFF059669)),
                       _cell('~35–60 МБ'),

@@ -1,6 +1,6 @@
 #[cfg(windows)]
 pub mod win_drop {
-    use tauri::{AppHandle, Emitter, Manager, State, WebviewWindow};
+    use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
     use windows::core::*;
     use windows::Win32::Foundation::*;
     use windows::Win32::System::Com::*;
@@ -10,7 +10,6 @@ pub mod win_drop {
     use windows::Win32::UI::Shell::{DragQueryFileW, HDROP};
 
     use crate::models::StashItem;
-    use crate::AppState;
 
     const CF_HDROP_ID: u16 = 15;
     const CF_UNICODETEXT_ID: u16 = 13;
@@ -18,11 +17,12 @@ pub mod win_drop {
     #[implement(IDropTarget)]
     pub struct CustomDropTarget {
         app_handle: AppHandle,
+        top_hwnd: HWND,
     }
 
     impl CustomDropTarget {
-        pub fn new(app_handle: AppHandle) -> Self {
-            Self { app_handle }
+        pub fn new(app_handle: AppHandle, top_hwnd: HWND) -> Self {
+            Self { app_handle, top_hwnd }
         }
 
         fn has_supported_format(&self, pdataobj: &IDataObject) -> bool {
@@ -69,10 +69,30 @@ pub mod win_drop {
         fn DragOver(
             &self,
             _grfkeystate: MODIFIERKEYS_FLAGS,
-            _pt: &POINTL,
+            pt: &POINTL,
             pdweffect: *mut DROPEFFECT,
         ) -> Result<()> {
             unsafe {
+                let is_shift = (_grfkeystate.0 & 0x0004) != 0;
+                let _ = self.app_handle.emit("drag-shift-state", is_shift);
+
+                let mut point = POINT { x: pt.x, y: pt.y };
+                let _ = windows::Win32::Graphics::Gdi::ScreenToClient(self.top_hwnd, &mut point);
+
+                let scale_factor = self
+                    .app_handle
+                    .get_webview_window("main")
+                    .and_then(|w| w.scale_factor().ok())
+                    .unwrap_or(1.0);
+
+                let logical_x = point.x as f64 / scale_factor;
+                let logical_y = point.y as f64 / scale_factor;
+
+                let _ = self.app_handle.emit("drag-cursor-move", serde_json::json!({
+                    "x": logical_x,
+                    "y": logical_y,
+                }));
+
                 *pdweffect = DROPEFFECT_COPY;
                 Ok(())
             }
@@ -80,6 +100,8 @@ pub mod win_drop {
 
         fn DragLeave(&self) -> Result<()> {
             let _ = self.app_handle.emit("drag-leave", ());
+            let _ = self.app_handle.emit("drag-shift-state", false);
+            let _ = self.app_handle.emit("drag-cursor-leave", ());
             Ok(())
         }
 
@@ -87,12 +109,27 @@ pub mod win_drop {
             &self,
             pdataobj: Option<&IDataObject>,
             _grfkeystate: MODIFIERKEYS_FLAGS,
-            _pt: &POINTL,
+            pt: &POINTL,
             pdweffect: *mut DROPEFFECT,
         ) -> Result<()> {
             unsafe {
                 *pdweffect = DROPEFFECT_NONE;
                 let _ = self.app_handle.emit("drag-leave", ());
+                let _ = self.app_handle.emit("drag-shift-state", false);
+
+                let is_shift = (_grfkeystate.0 & 0x0004) != 0;
+
+                let mut point = POINT { x: pt.x, y: pt.y };
+                let _ = windows::Win32::Graphics::Gdi::ScreenToClient(self.top_hwnd, &mut point);
+
+                let scale_factor = self
+                    .app_handle
+                    .get_webview_window("main")
+                    .and_then(|w| w.scale_factor().ok())
+                    .unwrap_or(1.0);
+
+                let logical_x = point.x as f64 / scale_factor;
+                let logical_y = point.y as f64 / scale_factor;
 
                 let Some(data_obj) = pdataobj else {
                     return Ok(());
@@ -130,21 +167,20 @@ pub mod win_drop {
                     ReleaseStgMedium(&medium as *const _ as *mut _);
 
                     if !file_paths.is_empty() {
-                        let state: State<AppState> = self.app_handle.state();
-                        let mut items = state.items.lock().unwrap();
-                        let mut added_any = false;
-
-                        for p in file_paths {
-                            if !items.iter().any(|it| it.path.as_deref() == Some(&p)) {
-                                items.push(StashItem::from_path(&p));
-                                added_any = true;
-                            }
+                        let mut new_items = Vec::new();
+                        for p in &file_paths {
+                            new_items.push(StashItem::from_path(p));
                         }
 
-                        if added_any {
-                            let cloned = items.clone();
-                            let _ = self.app_handle.emit("stash-updated", cloned);
-                        }
+                        let _ = self.app_handle.emit(
+                            "stash-drop-at",
+                            serde_json::json!({
+                                "items": new_items,
+                                "x": logical_x,
+                                "y": logical_y,
+                                "is_shift": is_shift,
+                            }),
+                        );
                         *pdweffect = DROPEFFECT_COPY;
                         handled = true;
                     }
@@ -182,26 +218,28 @@ pub mod win_drop {
                                 .collect();
 
                             if !non_empty_lines.is_empty() {
-                                // Если ВСЕ непустые строки — валидные URL, добавляем каждую отдельно.
-                                // Иначе весь текст — одна текстовая заметка.
                                 let all_urls = non_empty_lines
                                     .iter()
                                     .all(|l| l.starts_with("http://") || l.starts_with("https://"));
 
-                                let state: State<AppState> = self.app_handle.state();
-                                let mut items = state.items.lock().unwrap();
-
+                                let mut text_items = Vec::new();
                                 if all_urls {
                                     for line in &non_empty_lines {
-                                        items.push(StashItem::from_text(line));
+                                        text_items.push(StashItem::from_text(line));
                                     }
                                 } else {
-                                    // Сохраняем весь текст целиком (с переносами строк) как одну карточку
-                                    items.push(StashItem::from_text(&text));
+                                    text_items.push(StashItem::from_text(&text));
                                 }
 
-                                let cloned = items.clone();
-                                let _ = self.app_handle.emit("stash-updated", cloned);
+                                let _ = self.app_handle.emit(
+                                    "stash-drop-at",
+                                    serde_json::json!({
+                                        "items": text_items,
+                                        "x": logical_x,
+                                        "y": logical_y,
+                                        "is_shift": is_shift,
+                                    }),
+                                );
                                 *pdweffect = DROPEFFECT_COPY;
                             }
                         }
@@ -248,7 +286,7 @@ pub mod win_drop {
         for h in all_hwnds {
             unsafe {
                 let _ = RevokeDragDrop(h);
-                let drop_target: IDropTarget = CustomDropTarget::new(window.app_handle().clone()).into();
+                let drop_target: IDropTarget = CustomDropTarget::new(window.app_handle().clone(), top_hwnd).into();
                 let _ = RegisterDragDrop(h, &drop_target);
             }
         }

@@ -9,6 +9,13 @@ class FeaturesGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final features = [
       {
+        'icon': Icons.tab,
+        'titleRu': 'Мульти-полки и вкладки (Multi-Stash)',
+        'titleEn': 'Multi-Shelf Tabs (Multi-Stash)',
+        'descRu': 'Создавайте несколько независимых полок: сброс с клавишей Shift, закрепление (Pin), переключение колесиком или Ctrl+1..9, и автораскрытие при наведении файла.',
+        'descEn': 'Create multiple independent shelves: Shift-drop to new shelf, pin favorite shelves, navigate via wheel or Ctrl+1..9, and spring-loaded hover opening.',
+      },
+      {
         'icon': Icons.vibration,
         'titleRu': 'Встряска мыши (Shake)',
         'titleEn': 'Shake to Show',

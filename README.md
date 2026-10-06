@@ -52,6 +52,7 @@
 
 ### 🎯 Ключевые возможности
 
+- 🗂️ **Мульти-полки и вкладки (Multi-Stash Tabs):** Создавайте несколько независимых полок: сброс с зажатой клавишей `Shift` для быстрой новой полки, закрепление (Pin 📌) избранных полок, переключение колесиком мыши или хоткеями `Ctrl + 1..9` / `Ctrl + Tab`, автораскрытие неактивных вкладок при наведении (Spring-loaded) и постоянная кнопка `[+]` справа.
 - 📲 **Двусторонний обмен с телефоном по Wi-Fi (QR-код):** Мгновенная передача фото, камеры, файлов и заметок со смартфона в карман на ПК и скачивание обратно в один клик без регистрации и облаков.
 - 🫨 **Встряска мыши (Shake to Show):** Зажмите файл и качните мышь — карман появится прямо рядом с курсором (как в Dropover).
 - ⌨️ **Глобальный хоткей (Global Shortcut):** Мгновенный вызов и скрытие по комбинации клавиш (по умолчанию `Ctrl + Shift + Space`, `Alt + S`, `Ctrl + Alt + S`, `Win + Alt + S`).
@@ -95,6 +96,7 @@ Consumes **under 25 MB RAM** built with native **Rust 2021** and **Svelte 5** un
 
 ### 🎯 Core Features
 
+- 🗂️ **Multi-Shelf Tabs (Multi-Stash):** Create and manage multiple independent shelves: Shift-drop for instant new shelf creation, pin favorite shelves (Pin 📌), mouse wheel / `Ctrl + 1..9` / `Ctrl + Tab` switching, spring-loaded hover tab opening, and pinned `[+]` button on the right.
 - 📲 **Two-Way Wi-Fi Phone Drop (QR Code):** Instant wireless transfer of photos, live camera shots, files, and text notes between phone and desktop with zero cloud accounts or setup.
 - 🫨 **Shake to Show:** Hold and shake mouse while dragging files to instantly summon shelf at cursor position.
 - ⌨️ **Global Shortcut:** Instant toggle at cursor with customizable hotkeys (default `Ctrl + Shift + Space`, `Alt + S`, `Ctrl + Alt + S`, `Win + Alt + S`).

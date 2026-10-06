@@ -14,6 +14,34 @@ pub enum ItemKind {
     Url,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ShelfConfig {
+    pub id: String,
+    pub name: String,
+    pub pinned: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
+pub struct Shelf {
+    pub id: String,
+    pub name: String,
+    pub pinned: bool,
+    pub items: Vec<StashItem>,
+}
+
+impl Shelf {
+    #[allow(dead_code)]
+    pub fn new(id: String, name: String, pinned: bool) -> Self {
+        Self {
+            id,
+            name,
+            pinned,
+            items: Vec::new(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StashItem {
     pub id: String,
@@ -148,4 +176,99 @@ fn sanitize_id(s: &str) -> String {
         .filter(|c| c.is_alphanumeric())
         .take(12)
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_file_size() {
+        assert_eq!(format_file_size(0), "0 Б");
+        assert_eq!(format_file_size(500), "500 Б");
+        assert_eq!(format_file_size(1024), "1.0 КБ");
+        assert_eq!(format_file_size(1536), "1.5 КБ");
+        assert_eq!(format_file_size(1024 * 1024), "1.0 МБ");
+        assert_eq!(format_file_size(1024 * 1024 * 1024), "1.0 ГБ");
+        assert_eq!(format_file_size(5 * 1024 * 1024 * 1024), "5.0 ГБ");
+    }
+
+    #[test]
+    fn test_sanitize_id() {
+        assert_eq!(sanitize_id("hello-world.txt"), "helloworldtx");
+        assert_eq!(sanitize_id("test_123!@#"), "test123");
+        assert_eq!(sanitize_id(""), "");
+    }
+
+    #[test]
+    fn test_stash_item_from_text() {
+        let plain = "Hello, world!\nLine 2";
+        let item = StashItem::from_text(plain);
+        assert_eq!(item.kind, ItemKind::Text);
+        assert_eq!(item.name, "Hello, world!");
+        assert_eq!(item.extension, "txt");
+        assert_eq!(item.text_preview.as_deref(), Some(plain));
+        assert!(item.path.is_none());
+        assert_eq!(item.size_bytes, Some(plain.len() as u64));
+    }
+
+    #[test]
+    fn test_stash_item_from_url() {
+        let url = "https://github.com/kobaltgit/StashIt";
+        let item = StashItem::from_text(url);
+        assert_eq!(item.kind, ItemKind::Url);
+        assert_eq!(item.name, "github.com");
+        assert_eq!(item.extension, "url");
+        assert_eq!(item.text_preview.as_deref(), Some(url));
+        assert!(item.path.is_none());
+    }
+
+    #[test]
+    fn test_stash_item_from_path() {
+        let temp_dir = std::env::temp_dir();
+        let test_file = temp_dir.join("stashit_unit_test_img.png");
+        std::fs::write(&test_file, b"fake png data").unwrap();
+
+        let item = StashItem::from_path(test_file.to_str().unwrap());
+        assert_eq!(item.kind, ItemKind::Image);
+        assert_eq!(item.name, "stashit_unit_test_img.png");
+        assert_eq!(item.extension, "png");
+        assert!(item.path.is_some());
+        assert!(item.size_bytes.unwrap() > 0);
+
+        let _ = std::fs::remove_file(&test_file);
+    }
+
+    #[test]
+    fn test_stash_item_from_dir_path() {
+        let temp_dir = std::env::temp_dir();
+        let item = StashItem::from_path(temp_dir.to_str().unwrap());
+        assert_eq!(item.kind, ItemKind::Folder);
+        assert_eq!(item.extension, "folder");
+        assert_eq!(item.formatted_size, "Папка");
+    }
+
+    #[test]
+    fn test_shelf_creation() {
+        let mut shelf = Shelf::new("test_id".into(), "Проект".into(), true);
+        assert_eq!(shelf.id, "test_id");
+        assert_eq!(shelf.name, "Проект");
+        assert!(shelf.pinned);
+        assert!(shelf.items.is_empty());
+
+        shelf.items.push(StashItem::from_text("Sample"));
+        assert_eq!(shelf.items.len(), 1);
+    }
+
+    #[test]
+    fn test_shelf_config_serde() {
+        let cfg = ShelfConfig {
+            id: "work".into(),
+            name: "Работа".into(),
+            pinned: true,
+        };
+        let json = serde_json::to_string(&cfg).unwrap();
+        let deserialized: ShelfConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized, cfg);
+    }
 }

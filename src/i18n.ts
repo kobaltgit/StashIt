@@ -94,6 +94,18 @@ export const translations = {
     mobileDropStarting: 'Запуск локального сервера...',
     mobileDropStatusWaiting: 'Ожидание подключения...',
     mobileDropAutoStopHint: 'Сервер отключится автоматически при закрытии окна',
+
+    // Shelves / Tabs
+    defaultShelfName: 'Основное',
+    newShelfName: (n: number) => `Полка ${n}`,
+    newShelfTooltip: 'Новая полка (или зажмите Shift при сбросе)',
+    pinShelf: 'Закрепить полку',
+    unpinShelf: 'Открепить полку',
+    renameShelf: 'Переименовать',
+    closeShelf: 'Закрыть полку',
+    shiftDropHint: 'Отпустите с Shift для новой полки',
+    emptyShelfHint: 'Полка пуста',
+    emptyShelfSubHint: 'Перетащите файлы сюда или сбросьте с Shift в новую',
   },
   en: {
     // Header & Tooltips
@@ -188,5 +200,17 @@ export const translations = {
     mobileDropStarting: 'Starting local server...',
     mobileDropStatusWaiting: 'Waiting for connection...',
     mobileDropAutoStopHint: 'Server stops automatically when inactive or closed',
+
+    // Shelves / Tabs
+    defaultShelfName: 'Main',
+    newShelfName: (n: number) => `Shelf ${n}`,
+    newShelfTooltip: 'New Shelf (or hold Shift while dropping)',
+    pinShelf: 'Pin shelf',
+    unpinShelf: 'Unpin shelf',
+    renameShelf: 'Rename',
+    closeShelf: 'Close shelf',
+    shiftDropHint: 'Hold Shift to drop into a new shelf',
+    emptyShelfHint: 'Shelf is empty',
+    emptyShelfSubHint: 'Drop files here or hold Shift for a new shelf',
   }
 };
