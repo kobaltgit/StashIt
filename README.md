@@ -67,10 +67,16 @@
 
 ### 📥 Установка и загрузка
 
+#### Через Windows Package Manager (winget):
+```powershell
+winget install kobaltgit.StashIt
+```
+
+#### Напрямую с GitHub:
 Скачайте актуальную версию со [страницы последнего релиза](https://github.com/kobaltgit/StashIt/releases/latest):
 
 - **Инсталлятор (`Setup.exe` или `.msi`):** Быстрая установка без прав администратора.
-- **Portable версия (`.zip`):** Запуск в один клик без инсталляции.
+- **Portable версия (`.zip` / `.exe`):** Запуск в один клик без инсталляции.
 
 ---
 
@@ -111,6 +117,12 @@ Consumes **under 25 MB RAM** built with native **Rust 2021** and **Svelte 5** un
 
 ### 📥 Installation & Download
 
+#### Via Windows Package Manager (winget):
+```powershell
+winget install kobaltgit.StashIt
+```
+
+#### Directly from GitHub:
 Download the latest version from [GitHub Releases](https://github.com/kobaltgit/StashIt/releases/latest):
 
 - **Installer (`Setup.exe` / `.msi`):** Fast user-mode installer, no administrator rights needed.
