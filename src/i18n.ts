@@ -7,9 +7,7 @@ export const translations = {
     themeTooltip: (t: string) => `Тема: ${t === 'system' ? 'Системная' : t === 'dark' ? 'Тёмная' : 'Светлая'}`,
     langTooltip: 'Сменить язык (RU/EN)',
     settingsTooltip: 'Настройки вызова и автостарта',
-    closeTooltip: 'Свернуть (Esc)',
-    minimizeTooltip: 'Свернуть в трей (Esc)',
-    quitTooltip: 'Завершить работу StashIt',
+    closeTooltip: 'Скрыть в трей (Esc)',
     exitApp: 'Завершить работу StashIt (Выход)',
 
     // Tabs
@@ -103,9 +101,7 @@ export const translations = {
     themeTooltip: (t: string) => `Theme: ${t === 'system' ? 'System' : t === 'dark' ? 'Dark' : 'Light'}`,
     langTooltip: 'Switch Language (RU/EN)',
     settingsTooltip: 'Trigger & Autostart settings',
-    closeTooltip: 'Hide (Esc)',
-    minimizeTooltip: 'Minimize to tray (Esc)',
-    quitTooltip: 'Quit StashIt completely',
+    closeTooltip: 'Minimize to tray (Esc)',
     exitApp: 'Quit StashIt Application',
 
     // Tabs

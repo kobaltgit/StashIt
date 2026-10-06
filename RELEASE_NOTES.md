@@ -1,5 +1,24 @@
 # 📝 История версий StashIt (Release Notes)
 
+## [1.3.1] - 2026-10-06
+### 🇷🇺 Что нового:
+- **Упрощение управления окном и скрытия в трей**:
+  - **Крестик `✕` теперь аккуратно скрывает карман в трей** (полный эквивалент клавиши `Esc`), не прерывая работу фоновых перехватчиков и горячих клавиш.
+  - **Очистка панели инструментов**: убрана лишняя кнопка «—» (минус) из шапки окна, устранена путаница между сворачиванием и выходом.
+  - **Завершение работы**: выход из программы осуществляется через привычные системные механизмы — контекстное меню иконки в трее («Выход») или кнопку «Завершить работу StashIt» во вкладке настроек.
+  - Удалены избыточные модальные окна подтверждения закрытия.
+
+---
+
+### 🇬🇧 What's New:
+- **Simplified Window Management & Tray Behavior**:
+  - **Cross button `✕` now hides the shelf to tray** (identical to pressing `Esc`) without terminating background hooks or shortcuts.
+  - **Cleaner Header Toolbar**: removed redundant minimize «—» button next to close, preventing confusion.
+  - **Application Exit**: full exit is cleanly managed via system tray context menu ("Exit") or via Settings -> "Quit StashIt".
+  - Removed cumbersome modal confirmation dialogs.
+
+---
+
 ## [1.3.0] - 2026-10-05
 ### 🇷🇺 Что нового:
 - **Двусторонний беспроводной обмен с телефоном по Wi-Fi (Local Drop / Phone Drop)**:

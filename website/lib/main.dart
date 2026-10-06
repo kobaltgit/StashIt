@@ -53,7 +53,7 @@ class _LandingPageState extends State<LandingPage> {
   final GlobalKey _comparisonKey = GlobalKey();
   final GlobalKey _faqKey = GlobalKey();
   final GlobalKey _downloadKey = GlobalKey();
-  String? _releaseVersion = 'v1.3.0';
+  String? _releaseVersion = 'v1.3.1';
 
   @override
   void initState() {

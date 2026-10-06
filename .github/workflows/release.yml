@@ -47,41 +47,37 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'StashIt v__VERSION__'
           releaseBody: |
-            ## 🚀 StashIt v__VERSION__ — Поддержка нескольких мониторов / Full Multi-Monitor Support
+            ## 🚀 StashIt v__VERSION__
 
             ### 🇷🇺 Что нового в версии v__VERSION__:
-            * **Полная поддержка мультимониторных конфигураций (Multi-Monitor Support)**:
-              - **Динамическое определение активного монитора**: встряхивание (Shake), глобальный хоткей (`Ctrl + Shift + Space`) и двойное нажатие клавиши (`2× Ctrl` / `2× Shift`) теперь мгновенно открывают карман ровно на том мониторе, где находится курсор в момент действия.
-              - **Позиционирование в рабочей области (`rcWork`)**: окно кармана позиционируется строго внутри границ текущего экрана с учётом индивидуального положения панели задач каждого монитора.
-              - **Интеллектуальный Edge Dock на стыках экранов**:
-                - **Сквозной проход на межмониторных стыках**: при перемещении курсора или перетаскивании файлов с экрана на экран карман не выскакивает ложно и не мешает движению мыши.
-                - **Внешние кромки**: на физических внешних границах стола (где за кромкой нет соседа) Edge Dock открывает карман мгновенно.
-                - **Одиночный монитор**: при наличии только одного экрана обе кромки автоматически активны без дополнительных настроек.
-            * **4 способа активации и Раздел «О программе» (v1.2.x)**:
-              - 4 независимых триггера (Shake, Hotkey, 2×Ctrl, Edge Dock) с индивидуальной настройкой.
-              - Вкладки меню: «Управление» и «О программе».
-              - Встроенный Zero-Dependency чекер обновлений с GitHub Releases.
-            * **Автоматическая CI/CD сборка релизов**: автоматическая генерация трёх вариантов дистрибутива:
-              - **`StashIt___VERSION___x64-setup.exe`** — быстрый NSIS инсталлятор (без UAC)
-              - **`StashIt___VERSION___x64_en-US.msi`** — MSI пакет установщика Windows
+            * **Упрощённое управление окном и сворачивание в трей**:
+              - Кнопка **`✕` (крестик)** в шапке теперь аккуратно скрывает окно кармана в трей (как клавиша `Esc`), не завершая фоновые службы и глобальные горячие клавиши.
+              - Панель заголовка очищена от лишней кнопки «—» (минус) — лаконичный интерфейс без путаницы.
+              - Полное завершение работы StashIt доступно через контекстное меню иконки в системном трее («Выход») или кнопку в настройках.
+            * **Двусторонний обмен со смартфоном по Wi-Fi (Phone Drop)**:
+              - **Мгновенное сопряжение по QR-коду**: кнопка телефона в шапке открывает нативный экран с QR-кодом для быстрого подключения смартфона без проводов и сторонних серверов.
+              - **Передача со смартфона на ПК**: отправка фото, прямой снимок с камеры, передача документов, текста и ссылок сразу в карман.
+              - **Скачивание и шеринг с ПК на смартфон**: удобный предпросмотр файлов кармана на экране телефона, скачивание и отправка через нативное меню шеринга.
+              - **On-Demand микросервер на Rust**: работает только при открытом окне QR-кода и мгновенно выключается при скрытии кармана (0% CPU, строго <25 МБ ОЗУ).
+            * **Автоматическая CI/CD сборка релизов**: генерация 3 вариантов дистрибутива:
+              - **`StashIt___VERSION___x64-setup.exe`** — быстрый NSIS инсталлятор (без прав UAC)
+              - **`StashIt___VERSION___x64_en-US.msi`** — Windows Installer package (MSI)
               - **`StashIt___VERSION___x64_portable.exe`** — автономная портативная версия
 
             ---
 
             ### 🇬🇧 What's New in v__VERSION__:
-            * **Full Multi-Monitor Support**:
-              - **Dynamic Active Monitor Detection**: mouse shake (Shake to Show), global shortcuts (`Ctrl + Shift + Space`), and double-tap modifier triggers (`2× Ctrl` / `2× Shift`) now instantly summon the shelf on the exact monitor where the mouse cursor is located.
-              - **Precise Work Area Clamping (`rcWork`)**: shelf coordinates are constrained strictly within the active monitor's work area, respecting per-monitor taskbars and virtual desktop offsets.
-              - **Intelligent Edge Dock on Multi-Display Setups**:
-                - **Seamless Inter-Monitor Seams**: moving cursor or dragging files across monitors will not accidentally trigger the shelf, preventing interference with drag-and-drop between screens.
-                - **Outer Screen Edges**: physical outer boundaries without neighbor displays expand the shelf smoothly.
-                - **Single Monitor Setup**: on single-display setups, both left and right edges remain automatically active.
-            * **4 Activation Triggers & "About" Section (v1.2.x)**:
-              - 4 independent triggers (Shake, Hotkey, 2×Ctrl, Edge Dock) with customizable toggles.
-              - Tabbed Settings UI: "Controls" and "About".
-              - Built-in zero-dependency GitHub Release updater.
-            * **Automated CI/CD Release Builds**: automatic generation of 3 distribution flavors:
-              - **`StashIt___VERSION___x64-setup.exe`** — fast NSIS installer (no UAC required)
+            * **Simplified Window Management & Tray Minimize**:
+              - The **`✕` (close)** button in the header now smoothly hides the shelf to tray (identical to `Esc`), keeping shortcuts and background hooks active.
+              - Removed the redundant «—» button from the header for a cleaner, modern look.
+              - Clean application exit is always accessible via system tray context menu ("Exit") or Settings panel.
+            * **Two-Way Wi-Fi Phone Drop (QR Code Pairing)**:
+              - **Instant QR Pairing**: tap the phone icon in shelf header to pair instantly on local Wi-Fi with zero setup or cloud accounts.
+              - **Phone to PC Upload**: upload photos, snap live camera shots, send files, documents, and notes straight to desktop shelf.
+              - **PC to Phone Download & Share**: browse shelf items with live thumbnails, download files, or share via native Web Share API.
+              - **On-Demand Rust Server**: micro-server spins up only when pairing is active and stops automatically when closed (0% idle CPU, <25 MB RAM).
+            * **Automated CI/CD Release Builds**:
+              - **`StashIt___VERSION___x64-setup.exe`** — fast NSIS installer (no admin rights required)
               - **`StashIt___VERSION___x64_en-US.msi`** — Windows Installer package (MSI)
               - **`StashIt___VERSION___x64_portable.exe`** — standalone portable executable
           releaseDraft: false
